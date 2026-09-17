@@ -5,7 +5,7 @@
  * and API response handling — input validation is the responsibility of callers.
  */
 
-import { PerpsClient } from "./PerpsClient.js";
+import { PerpsClient } from "./PerpsClient";
 
 // ── PerpsApi mock ─────────────────────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ const mockApi = {
   postTransferUsdcSpotPerp: jest.fn(),
 };
 
-jest.mock("./api.js", () => ({
+jest.mock("./api", () => ({
   PerpsApi: jest.fn().mockImplementation(() => mockApi),
 }));
 
@@ -31,13 +31,23 @@ jest.mock("./api.js", () => ({
 
 const MOCK_MARKET = {
   symbol: "BTC",
+  name: "Bitcoin",
   assetId: 0,
   maxLeverage: 50,
   szDecimals: 5,
   price: "50000",
+  priceChange24h: { amount: "1000", percentage: "2.00" },
   fundingRate: "0.0001",
   openInterest: "1000000",
   volume24h: "5000000",
+  isAtOpenInterestCap: false,
+};
+
+const MOCK_HIP3_MARKET = {
+  ...MOCK_MARKET,
+  symbol: "xyz:BTC",
+  name: "xyz Bitcoin",
+  assetId: 100000,
 };
 
 const MOCK_POSITION = {
@@ -218,5 +228,75 @@ describe("withdraw", () => {
   it.each([["0"], ["-10"], ["all"], ["abc"], [" 50"], ["1e5"]])("rejects amountUsdc=%j", async bad => {
     const client = makeClient();
     await expect(client.withdraw(bad)).rejects.toThrow("amountUsdc");
+  });
+});
+
+// ── requireAssetId guard ──────────────────────────────────────────────────────
+
+describe("requireAssetId guard", () => {
+  const marketWithoutAssetId = { ...MOCK_MARKET, assetId: undefined };
+
+  it("openPosition throws when market has no assetId", async () => {
+    mockApi.getMarkets.mockResolvedValue([marketWithoutAssetId]);
+    const client = makeClient();
+    await expect(
+      client.openPosition({ market: "BTC", direction: "long", sizeUsd: "100", leverage: 10, orderType: "market" }),
+    ).rejects.toThrow("assetId not returned by backend for market BTC");
+  });
+
+  it("closePosition throws when market has no assetId", async () => {
+    mockApi.getMarkets.mockResolvedValue([marketWithoutAssetId]);
+    const client = makeClient();
+    await expect(client.closePosition({ market: "BTC" })).rejects.toThrow(
+      "assetId not returned by backend for market BTC",
+    );
+  });
+
+  it("cancelOrder throws when market has no assetId", async () => {
+    mockApi.getMarkets.mockResolvedValue([marketWithoutAssetId]);
+    const client = makeClient();
+    await expect(client.cancelOrder({ market: "BTC", orderId: 42 })).rejects.toThrow(
+      "assetId not returned by backend for market BTC",
+    );
+  });
+
+  it("updateLeverage throws when market has no assetId", async () => {
+    mockApi.getMarkets.mockResolvedValue([marketWithoutAssetId]);
+    const client = makeClient();
+    await expect(client.updateLeverage({ market: "BTC", leverage: 10, marginType: "isolated" })).rejects.toThrow(
+      "assetId not returned by backend for market BTC",
+    );
+  });
+});
+
+// ── HIP-3 market lookup ───────────────────────────────────────────────────────
+
+describe("HIP-3 market lookup", () => {
+  beforeEach(() => {
+    mockApi.getMarkets.mockResolvedValue([MOCK_HIP3_MARKET]);
+    mockApi.getPositionsAndOpenOrders.mockResolvedValue({
+      positions: [{ ...MOCK_POSITION, coin: "xyz:BTC" }],
+      openOrders: [],
+    });
+  });
+
+  it("passes symbol as-is in CAIP-19 (no case transformation)", async () => {
+    const client = makeClient();
+    await client.openPosition({
+      market: "xyz:BTC",
+      direction: "long",
+      sizeUsd: "100",
+      leverage: 5,
+      orderType: "market",
+    });
+    expect(mockApi.getMarkets).toHaveBeenCalledWith(["hypercore:mainnet/address:xyz:BTC"]);
+  });
+
+  it("throws when HIP-3 market is not found", async () => {
+    mockApi.getMarkets.mockResolvedValue([]);
+    const client = makeClient();
+    await expect(
+      client.openPosition({ market: "xyz:BTC", direction: "long", sizeUsd: "100", leverage: 5, orderType: "market" }),
+    ).rejects.toThrow("Market not found: xyz:BTC");
   });
 });

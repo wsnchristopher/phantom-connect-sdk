@@ -2,7 +2,7 @@ import { getPerpPositionsTool } from "./get-perp-positions";
 
 const mockPerpsClient = { getPositions: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -33,7 +33,7 @@ const POSITIONS = [
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.getPositions.mockResolvedValue(POSITIONS);
 });

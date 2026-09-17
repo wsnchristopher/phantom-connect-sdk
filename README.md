@@ -106,6 +106,8 @@ const ethResult = await sdk.ethereum.sendTransaction({
 });
 ```
 
+See [message signing semantics](./docs/message-signing.md) for the exact text and byte encodings used by Solana and EVM signing APIs.
+
 ### Server SDK - **For Backend Applications**
 
 **[@phantom/server-sdk](./packages/server-sdk/README.md)** - Server-side SDK for backend applications with built-in authentication.
@@ -151,10 +153,11 @@ await sdk.signAndSendTransaction({
   networkId: NetworkId.ETHEREUM_MAINNET,
 });
 
-// Raw bytes or hex strings
+// Raw bytes or hex strings must contain a decodable unsigned EVM transaction.
+const unsignedSerializedTransaction = "0xdc80018252089400000000000000000000000000000000000000010180";
 await sdk.signAndSendTransaction({
   walletId: wallet.walletId,
-  transaction: "0x01020304", // Hex string
+  transaction: unsignedSerializedTransaction,
   networkId: NetworkId.ETHEREUM_MAINNET,
 });
 ```

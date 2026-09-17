@@ -7,8 +7,8 @@
 
 import type { NetworkId, PhantomClient } from "@phantom/client";
 import { parseToKmsTransaction } from "@phantom/parsers";
-import { estimateGas } from "./evm.js";
-import type { Logger } from "./logger.js";
+import { estimateGas } from "./evm";
+import type { Logger } from "./logger";
 
 // ── RPC helper (local, mirrors the pattern in evm.ts) ───────────────────────
 

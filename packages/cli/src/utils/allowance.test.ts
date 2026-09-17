@@ -7,7 +7,7 @@ jest.mock("@phantom/parsers", () => ({
   parseToKmsTransaction: jest.fn().mockResolvedValue({ parsed: "0xrlpencoded" }),
 }));
 
-jest.mock("./evm.js", () => ({
+jest.mock("./evm", () => ({
   estimateGas: jest.fn().mockResolvedValue("0x5208"),
 }));
 

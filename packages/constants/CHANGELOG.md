@@ -1,5 +1,12 @@
 # @phantom/constants
 
+## 2.0.3
+
+### Patch Changes
+
+- fce0979: Bind EVM transactions to their selected network before signing.
+  - @phantom/sdk-types@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

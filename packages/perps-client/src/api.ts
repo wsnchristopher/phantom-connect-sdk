@@ -3,25 +3,36 @@
  * Logs every request and every error response body.
  */
 
-import type {
-  PerpAccountBalance,
-  PerpPosition,
-  PerpOrder,
-  PerpMarket,
-  HistoricalOrder,
-  FundingActivity,
-  SignatureComponents,
-  HlOrderAction,
-  HlCancelAction,
-  HlUpdateLeverageAction,
-  HlUsdClassTransferAction,
-  HlOrderResponse,
-  HlDefaultResponse,
-  HlCancelOrderResponse,
-  RelayWithdrawalV2Quote,
-  PerpsLogger,
-} from "./types.js";
-import { noopLogger } from "./types.js";
+import { z } from "zod";
+import type { PerpsLogger } from "./logger";
+import { noopLogger } from "./logger";
+import {
+  type PerpAccountBalance,
+  type PerpPosition,
+  type PerpOrder,
+  type PerpMarket,
+  type HistoricalOrder,
+  type FundingActivity,
+  type SignatureComponents,
+  type HlOrderAction,
+  type HlCancelAction,
+  type HlUpdateLeverageAction,
+  type HlUsdClassTransferAction,
+  type HlOrderResponse,
+  type HlDefaultResponse,
+  type HlCancelOrderResponse,
+  type RelayWithdrawalV2Quote,
+  PerpAccountBalanceSchema,
+  PerpPositionSchema,
+  PerpOrderSchema,
+  PerpMarketSchema,
+  HistoricalOrderSchema,
+  FundingActivitySchema,
+  RelayWithdrawalV2QuoteSchema,
+  HlDefaultResponseSchema,
+  HlCancelOrderResponseSchema,
+  HlOrderResponseSchema,
+} from "./schemas";
 
 /** Minimal interface compatible with PhantomApiClient from @phantom/phantom-api-client */
 export interface ApiClient {
@@ -53,34 +64,32 @@ export class PerpsApi {
 
   async getAccountBalance(user: string): Promise<PerpAccountBalance> {
     this.logger.info(`getAccountBalance user=${user}`);
-    return this.get<PerpAccountBalance>("/swap/v2/perp/balance", { user });
+    const data = await this.get("/swap/v2/perp/balance", { user });
+    return PerpAccountBalanceSchema.parse(data);
   }
 
   async getFundingHistory(user: string): Promise<FundingActivity[]> {
     this.logger.info(`getFundingHistory user=${user}`);
-    const data = await this.get<{ depositAndWithdrawals: RawFundingActivity[] }>(
-      "/swap/v2/perp/deposits-and-withdrawals",
-      { user },
-    );
-    return data.depositAndWithdrawals.map(mapFundingActivity);
+    const data = await this.get("/swap/v2/perp/deposits-and-withdrawals", { user });
+    const parsed = FundingHistoryResponseSchema.parse(data);
+    return parsed.depositAndWithdrawals.map(mapFundingActivity);
   }
 
   async getPositionsAndOpenOrders(user: string): Promise<{ positions: PerpPosition[]; openOrders: PerpOrder[] }> {
     this.logger.info(`getPositionsAndOpenOrders user=${user}`);
-    const data = await this.get<{ positions: RawPosition[]; openOrders: RawOpenOrder[] }>(
-      "/swap/v2/perp/positions-and-open-orders",
-      { user },
-    );
+    const data = await this.get("/swap/v2/perp/positions-and-open-orders", { user });
+    const parsed = PositionsAndOrdersResponseSchema.parse(data);
     return {
-      positions: data.positions.map(mapPosition),
-      openOrders: data.openOrders.map(mapOpenOrder),
+      positions: parsed.positions.map(mapPosition),
+      openOrders: parsed.openOrders.map(mapOpenOrder),
     };
   }
 
   async getTradeHistory(user: string): Promise<HistoricalOrder[]> {
     this.logger.info(`getTradeHistory user=${user}`);
-    const data = await this.get<{ tradeHistory: RawHistoricalOrder[] }>("/swap/v2/perp/trade-history", { user });
-    return data.tradeHistory.map(mapHistoricalOrder);
+    const data = await this.get("/swap/v2/perp/trade-history", { user });
+    const parsed = TradeHistoryResponseSchema.parse(data);
+    return parsed.tradeHistory.map(mapHistoricalOrder);
   }
 
   /**
@@ -89,11 +98,12 @@ export class PerpsApi {
    */
   async getMarkets(tokens: string[]): Promise<PerpMarket[]> {
     this.logger.info(`getMarkets tokens=${tokens.join(",")}`);
-    const data = await this.get<{ markets: RawMarket[] | Record<string, RawMarket> }>("/swap/v2/perp/markets", {
+    const data = await this.get("/swap/v2/perp/markets", {
       tokens: tokens.join(","),
     });
+    const parsed = MarketsResponseSchema.parse(data);
     // The API returns either an array or a keyed record depending on version
-    const items = Array.isArray(data.markets) ? data.markets : Object.values(data.markets);
+    const items = Array.isArray(parsed.markets) ? parsed.markets : Object.values(parsed.markets);
     return items.map(mapMarket);
   }
 
@@ -103,12 +113,13 @@ export class PerpsApi {
    */
   async getTrendingMarkets(): Promise<PerpMarket[]> {
     this.logger.info(`getTrendingMarkets`);
-    const data = await this.get<{ trendingMarkets: RawMarket[] }>("/swap/v2/perp/trending-markets", {
+    const data = await this.get("/swap/v2/perp/trending-markets", {
       chainId: "hypercore:mainnet",
       sortBy: "trending",
       sortDirection: "desc",
     });
-    return (data.trendingMarkets ?? []).map(mapMarket);
+    const parsed = TrendingMarketsResponseSchema.parse(data);
+    return parsed.trendingMarkets.map(mapMarket);
   }
 
   /**
@@ -117,11 +128,12 @@ export class PerpsApi {
    */
   async getAllMarkets(): Promise<PerpMarket[]> {
     this.logger.info(`getAllMarkets`);
-    const data = await this.get<Record<string, { markets: RawMarket[] }>>("/swap/v2/perp/market-lists");
+    const data = await this.get("/swap/v2/perp/market-lists");
+    const parsed = MarketListsResponseSchema.parse(data);
     const seen = new Set<string>();
     const markets: PerpMarket[] = [];
-    for (const category of Object.values(data)) {
-      for (const raw of category.markets ?? []) {
+    for (const category of Object.values(parsed)) {
+      for (const raw of category.markets) {
         if (!seen.has(raw.symbol)) {
           seen.add(raw.symbol);
           markets.push(mapMarket(raw));
@@ -141,7 +153,8 @@ export class PerpsApi {
     signature: SignatureComponents;
   }): Promise<HlOrderResponse> {
     this.logger.info(`postPlaceOrder nonce=${body.nonce}`);
-    return this.post<HlOrderResponse>("/swap/v2/exchange", body);
+    const data = await this.post("/swap/v2/exchange", body);
+    return HlOrderResponseSchema.parse(data);
   }
 
   /**
@@ -154,7 +167,8 @@ export class PerpsApi {
     signature: SignatureComponents;
   }): Promise<HlCancelOrderResponse> {
     this.logger.info(`postCancelOrder nonce=${body.nonce}`);
-    return this.post<HlCancelOrderResponse>("/swap/v2/exchange", body);
+    const data = await this.post("/swap/v2/exchange", body);
+    return HlCancelOrderResponseSchema.parse(data);
   }
 
   /**
@@ -167,7 +181,8 @@ export class PerpsApi {
     signature: SignatureComponents;
   }): Promise<HlDefaultResponse> {
     this.logger.info(`postUpdateLeverage asset=${body.action.asset} leverage=${body.action.leverage}`);
-    return this.post<HlDefaultResponse>("/swap/v2/exchange", body);
+    const data = await this.post("/swap/v2/exchange", body);
+    return HlDefaultResponseSchema.parse(data);
   }
 
   async postTransferUsdcSpotPerp(body: {
@@ -176,7 +191,8 @@ export class PerpsApi {
     signature: SignatureComponents;
   }): Promise<HlDefaultResponse> {
     this.logger.info(`postTransferUsdcSpotPerp amount=${body.action.amount} toPerp=${body.action.toPerp}`);
-    return this.post<HlDefaultResponse>("/swap/v2/exchange", body);
+    const data = await this.post("/swap/v2/exchange", body);
+    return HlDefaultResponseSchema.parse(data);
   }
 
   async getBridgeInitialize(params: {
@@ -186,15 +202,16 @@ export class PerpsApi {
     sourceWallet: string;
   }): Promise<RelayWithdrawalV2Quote> {
     this.logger.info(`getBridgeInitialize sellAmount=${params.sellAmount} dest=${params.takerDestination}`);
-    return this.get<RelayWithdrawalV2Quote>("/swap/v2/spot/bridge-initialize", {
+    const data = await this.get("/swap/v2/spot/bridge-initialize", {
       ...params,
       bridgeProvider: "RelayV2",
     });
+    return RelayWithdrawalV2QuoteSchema.parse(data);
   }
 
   async postAuthorize(endpoint: string, body: Record<string, unknown>): Promise<unknown> {
     this.logger.info(`postAuthorize endpoint=${endpoint}`);
-    return this.post<unknown>(endpoint, body);
+    return this.post(endpoint, body);
   }
 
   async postSpotSend(body: {
@@ -203,89 +220,134 @@ export class PerpsApi {
     signature: SignatureComponents;
   }): Promise<unknown> {
     this.logger.info(`postSpotSend nonce=${body.nonce}`);
-    return this.post<unknown>("/swap/v2/exchange", body);
+    return this.post("/swap/v2/exchange", body);
   }
 }
 
-// ── Raw response shapes from Phantom backend ────────────────────────────────
+const RawPositionSchema = z.object({
+  direction: z.enum(["long", "short"]),
+  leverage: z.string(),
+  size: z.string(),
+  margin: z.string(),
+  entryPrice: z.string(),
+  fundingPayments: z.string().optional(),
+  market: z.object({
+    token: z.object({ address: z.string(), chainId: z.string().optional() }),
+    logoUri: z.string().optional(),
+  }),
+  unrealizedPnl: z.object({ amount: z.string(), percentage: z.string().optional() }).nullable(),
+  liquidationPrice: z.string().nullish(),
+});
 
-interface RawPosition {
-  direction: "long" | "short";
-  leverage: string;
-  size: string;
-  margin: string;
-  entryPrice: string;
-  fundingPayments?: string;
-  market: { token: { address: string; chainId?: string }; logoUri?: string };
-  unrealizedPnl: { amount: string; percentage?: string } | null;
-  liquidationPrice: string;
-}
-
-interface RawOpenOrder {
-  id: string;
-  market: { token: { address: string } };
-  isTrigger?: boolean;
-  direction: "long" | "short";
-  type: "limit" | "take_profit_market" | "stop_market";
-  limitPrice: string;
-  triggerPrice?: string;
-  size: string;
-  reduceOnly: boolean;
+const RawOpenOrderSchema = z.object({
+  id: z.string(),
+  market: z.object({ token: z.object({ address: z.string() }) }),
+  isTrigger: z.boolean().optional(),
+  direction: z.enum(["long", "short"]),
+  type: z.enum(["limit", "take_profit_market", "stop_market"]),
+  limitPrice: z.string(),
+  triggerPrice: z.string().optional(),
+  size: z.string(),
+  reduceOnly: z.boolean(),
   /** Backend sends timestamp as a string. */
-  timestamp: string;
-}
+  timestamp: z.string(),
+});
 
-interface RawHistoricalOrder {
-  id: string;
-  market: { token: { address: string; chainId?: string }; logoUri?: string; szDecimals?: number };
-  type: string;
-  timestamp: number;
-  price: string;
-  size: string;
-  tradeValue: string;
-  fee: string;
-  closedPnl?: string;
-}
+const PositionsAndOrdersResponseSchema = z.object({
+  positions: z.array(RawPositionSchema),
+  openOrders: z.array(RawOpenOrderSchema),
+});
 
-interface RawMarket {
-  symbol: string;
-  /** Numeric Hyperliquid asset index — used to construct orders. */
-  assetId: number;
-  name?: string;
-  logoUri?: string;
-  maxLeverage: number;
-  szDecimals: number;
-  price: string;
-  fundingRate: string;
-  openInterest: string;
-  volume24h: string;
-}
+const RawHistoricalOrderSchema = z.object({
+  id: z.string(),
+  market: z.object({
+    token: z.object({ address: z.string(), chainId: z.string().optional() }),
+    logoUri: z.string().optional(),
+    szDecimals: z.number().optional(),
+  }),
+  type: z.string(),
+  timestamp: z.number(),
+  price: z.string(),
+  size: z.string(),
+  tradeValue: z.string(),
+  fee: z.string(),
+  closedPnl: z.string().optional(),
+});
+
+const TradeHistoryResponseSchema = z.object({
+  tradeHistory: z.array(RawHistoricalOrderSchema),
+});
+
+const RawMarketSchema = z.object({
+  symbol: z.string(),
+  name: z.string(),
+  token: z.object({
+    chainId: z.string(),
+    resourceType: z.string(),
+    address: z.string(),
+  }),
+  logoUri: z.string(),
+  szDecimals: z.number(),
+  maxLeverage: z.number(),
+  price: z.string(),
+  priceChange24h: z.object({
+    amount: z.string(),
+    percentage: z.string(),
+  }),
+  volume24h: z.string(),
+  openInterest: z.string(),
+  isAtOpenInterestCap: z.boolean(),
+  fundingRate: z.string(),
+  description: z.string().optional(),
+  collateralToken: z.object({ tokenIndex: z.number(), pairIndex: z.number() }).optional(),
+  /** Present when the backend includes the asset index; not formally exposed in the DTO. */
+  assetId: z.number().optional(),
+});
+
+const MarketsResponseSchema = z.object({
+  markets: z.union([z.array(RawMarketSchema), z.record(z.string(), RawMarketSchema)]),
+});
+
+const TrendingMarketsResponseSchema = z.object({
+  trendingMarkets: z.array(RawMarketSchema),
+});
+
+const MarketListsResponseSchema = z.record(z.string(), z.object({ markets: z.array(RawMarketSchema) }));
 
 /** Raw shape of a single deposit-or-withdrawal item from the backend. */
-interface RawFundingActivity {
-  id: string;
-  type: string;
+const RawFundingActivitySchema = z.object({
+  id: z.string(),
+  type: z.string(),
   /** Amount in USDC. */
-  usdcAmount: string;
-  timestamp: number;
-}
+  usdcAmount: z.string(),
+  timestamp: z.number(),
+});
+
+const FundingHistoryResponseSchema = z.object({
+  depositAndWithdrawals: z.array(RawFundingActivitySchema),
+});
+
+// ── Raw → public type mappers ─────────────────────────────────────────────────
+
+type RawPosition = z.infer<typeof RawPositionSchema>;
 
 function mapPosition(raw: RawPosition): PerpPosition {
-  const leverage = parseFloat(raw.leverage);
-  return {
+  return PerpPositionSchema.parse({
     coin: raw.market.token.address,
     direction: raw.direction,
     size: raw.size,
     margin: raw.margin,
     entryPrice: raw.entryPrice,
-    leverage: { type: "unknown", value: leverage },
+    leverage: { type: "unknown", value: raw.leverage },
     unrealizedPnl: raw.unrealizedPnl?.amount ?? "0",
     liquidationPrice: raw.liquidationPrice || null,
-  };
+  });
 }
 
+type RawOpenOrder = z.infer<typeof RawOpenOrderSchema>;
+
 function mapOpenOrder(raw: RawOpenOrder): PerpOrder {
-  return {
+  return PerpOrderSchema.parse({
     id: raw.id,
     coin: raw.market.token.address,
     side: raw.direction,
@@ -295,12 +357,14 @@ function mapOpenOrder(raw: RawOpenOrder): PerpOrder {
     triggerPrice: raw.triggerPrice,
     size: raw.size,
     reduceOnly: raw.reduceOnly,
-    timestamp: parseInt(raw.timestamp, 10),
-  };
+    timestamp: raw.timestamp,
+  });
 }
 
+type RawHistoricalOrder = z.infer<typeof RawHistoricalOrderSchema>;
+
 function mapHistoricalOrder(raw: RawHistoricalOrder): HistoricalOrder {
-  return {
+  return HistoricalOrderSchema.parse({
     id: raw.id,
     coin: raw.market.token.address,
     type: raw.type,
@@ -310,27 +374,36 @@ function mapHistoricalOrder(raw: RawHistoricalOrder): HistoricalOrder {
     tradeValue: raw.tradeValue,
     fee: raw.fee,
     closedPnl: raw.closedPnl,
-  };
+  });
 }
 
+type RawMarket = z.infer<typeof RawMarketSchema>;
+
 function mapMarket(raw: RawMarket): PerpMarket {
-  return {
+  return PerpMarketSchema.parse({
     symbol: raw.symbol,
+    name: raw.name,
     assetId: raw.assetId,
     maxLeverage: raw.maxLeverage,
     szDecimals: raw.szDecimals,
     price: raw.price,
+    priceChange24h: raw.priceChange24h,
     fundingRate: raw.fundingRate,
     openInterest: raw.openInterest,
     volume24h: raw.volume24h,
-  };
+    isAtOpenInterestCap: raw.isAtOpenInterestCap,
+    ...(raw.description !== undefined ? { description: raw.description } : {}),
+    ...(raw.collateralToken !== undefined ? { collateralToken: raw.collateralToken } : {}),
+  });
 }
 
+type RawFundingActivity = z.infer<typeof RawFundingActivitySchema>;
+
 function mapFundingActivity(raw: RawFundingActivity): FundingActivity {
-  return {
+  return FundingActivitySchema.parse({
     id: raw.id,
     type: raw.type,
     amount: raw.usdcAmount,
     timestamp: raw.timestamp,
-  };
+  });
 }

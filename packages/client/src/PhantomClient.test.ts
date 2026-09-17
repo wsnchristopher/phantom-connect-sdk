@@ -4,6 +4,16 @@ import { NetworkId } from "@phantom/constants";
 import { Algorithm } from "@phantom/sdk-types";
 import { SpendingLimitError, TransactionBlockedError } from "./errors";
 import axios, { type AxiosError } from "axios";
+import { Transaction, encodeRlp } from "ethers";
+
+const unsignedEvmTransaction = Transaction.from({
+  chainId: 1,
+  nonce: 0,
+  gasLimit: 21_000,
+  gasPrice: 1,
+  to: "0x0000000000000000000000000000000000000001",
+  value: 1,
+}).unsignedSerialized;
 
 // Mock axios to prevent actual HTTP requests
 jest.mock("axios", () => {
@@ -557,7 +567,7 @@ describe("PhantomClient Spending Limits Integration", () => {
       await performSigning(
         {
           walletId: "wallet-123",
-          transaction: "0x1234",
+          transaction: unsignedEvmTransaction,
           networkId: NetworkId.ETHEREUM_MAINNET,
           account: "0xUser",
         },
@@ -586,6 +596,64 @@ describe("PhantomClient Spending Limits Integration", () => {
       );
 
       expect(mockAxiosPost).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("direct EVM signing chain binding", () => {
+    it("binds unbound raw RLP before the KMS request", async () => {
+      const unbound = encodeRlp(["0x", "0x01", "0x5208", "0x0000000000000000000000000000000000000001", "0x01", "0x"]);
+      mockKmsPost.mockResolvedValue({ data: { result: { transaction: "signed-tx" } } });
+
+      await client.signTransaction({
+        walletId: "wallet-123",
+        transaction: unbound,
+        networkId: NetworkId.ETHEREUM_MAINNET,
+      });
+
+      const request = mockKmsPost.mock.calls[0][0];
+      expect(Transaction.from(request.params.transaction.bytes).chainId).toBe(1n);
+    });
+
+    it("rejects mismatched raw RLP before the KMS request", async () => {
+      const polygonTransaction = Transaction.from({
+        chainId: 137,
+        nonce: 0,
+        gasLimit: 21_000,
+        gasPrice: 1,
+        to: "0x0000000000000000000000000000000000000001",
+        value: 1,
+      }).unsignedSerialized;
+
+      await expect(
+        client.signAndSendTransaction({
+          walletId: "wallet-123",
+          transaction: polygonTransaction,
+          networkId: NetworkId.ETHEREUM_MAINNET,
+        }),
+      ).rejects.toThrow("chainId 137 does not match network chainId 1");
+      expect(mockKmsPost).not.toHaveBeenCalled();
+    });
+
+    it("rejects an explicit zero chainId in a raw typed transaction before the KMS request", async () => {
+      const typedZero = Transaction.from({
+        type: 2,
+        chainId: 0,
+        nonce: 0,
+        gasLimit: 21_000,
+        maxFeePerGas: 2,
+        maxPriorityFeePerGas: 1,
+        to: "0x0000000000000000000000000000000000000001",
+        value: 1,
+      }).unsignedSerialized;
+
+      await expect(
+        client.signTransaction({
+          walletId: "wallet-123",
+          transaction: typedZero,
+          networkId: NetworkId.ETHEREUM_MAINNET,
+        }),
+      ).rejects.toThrow("Unsupported EVM transaction chainId: 0");
+      expect(mockKmsPost).not.toHaveBeenCalled();
     });
   });
 
@@ -716,7 +784,7 @@ describe("PhantomClient Spending Limits Integration", () => {
       const result = await performSigning(
         {
           walletId: "wallet-123",
-          transaction: "0x1234",
+          transaction: unsignedEvmTransaction,
           networkId: NetworkId.ETHEREUM_MAINNET,
           account: "0xUser",
         },
@@ -942,7 +1010,7 @@ describe("PhantomClient rpc_submission_result envelope handling", () => {
 
   const baseParams = {
     walletId: "wallet-1",
-    transaction: "0xrlpencoded",
+    transaction: unsignedEvmTransaction,
     networkId: NetworkId.ETHEREUM_MAINNET,
   };
 
@@ -1147,7 +1215,7 @@ describe("PhantomClient presignTransaction (per-call)", () => {
 
     await client.signAndSendTransaction({
       walletId: "wallet-123",
-      transaction: "0x1234",
+      transaction: unsignedEvmTransaction,
       networkId: NetworkId.ETHEREUM_MAINNET,
       presignTransaction,
     });

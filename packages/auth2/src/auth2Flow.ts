@@ -40,6 +40,8 @@ const DAPP_WALLET_DERIVATIONS: Array<DerivationInfoSchema> = [
 const DAPP_WALLET_MNEMONIC_LENGTH = 24;
 const DAPP_WALLET_DERIVATION_INDEX = 0;
 
+const AGENT_WALLET_TAG = "agent";
+
 /**
  * Shared first phase of the Auth2 PKCE flow: ensure the stamper is ready,
  * generate a PKCE code verifier, and build the /login/start URL.
@@ -331,4 +333,54 @@ export async function _getOrCreateAppWallet({
     accounts: DAPP_WALLET_DERIVATIONS,
     mnemonicLength: DAPP_WALLET_MNEMONIC_LENGTH,
   });
+}
+
+/**
+ * Retrieves an existing CLI agent wallet by the client UUID tag, or creates one
+ * tagged with both the client UUID and the agent marker.
+ */
+export async function _getOrCreateAgentWallet({
+  kms,
+  organizationId,
+  clientId,
+}: {
+  kms: Auth2KmsRpcClient;
+  organizationId: string;
+  clientId: string;
+}): Promise<ExternalKmsWallet> {
+  const existingWallet = await kms.getWalletWithTag({
+    organizationId,
+    tag: clientId,
+  });
+
+  if (existingWallet) {
+    return existingWallet;
+  }
+
+  try {
+    return await kms.createWallet({
+      organizationId,
+      walletName: "Agent Wallet",
+      tags: [clientId, AGENT_WALLET_TAG],
+      accounts: DAPP_WALLET_DERIVATIONS,
+      mnemonicLength: DAPP_WALLET_MNEMONIC_LENGTH,
+    });
+  } catch (createWalletError) {
+    // createWallet is not atomic with the initial lookup. If another device-code
+    // auth session created the wallet in the gap, reuse it instead of failing the
+    // losing session.
+    try {
+      const concurrentlyCreatedWallet = await kms.getWalletWithTag({
+        organizationId,
+        tag: clientId,
+      });
+      if (concurrentlyCreatedWallet) {
+        return concurrentlyCreatedWallet;
+      }
+    } catch {
+      // Ignore fallback lookup failure and preserve original create error.
+    }
+
+    throw createWalletError;
+  }
 }

@@ -118,8 +118,8 @@ When running as an MCP server (`phantom --mcp`), all commands are exposed as MCP
 | `buy`                            | Buy/swap tokens                                     |
 | `simulate`                       | Simulate a transaction                              |
 | `pay`                            | Pay for API access                                  |
-| `perps_markets`                  | List perp markets                                   |
-| `perps_account`                  | Get perps account                                   |
+| `perps_markets`                  | List perp markets (includes HIP-3 DEX markets)      |
+| `perps_account`                  | Get perps account (includes HIP-3 per-DEX balances) |
 | `perps_positions`                | Get open positions                                  |
 | `perps_orders`                   | Get open orders                                     |
 | `perps_history`                  | Get trade history                                   |

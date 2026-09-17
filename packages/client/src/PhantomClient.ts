@@ -42,6 +42,7 @@ import axios, { type AxiosResponse, isAxiosError, type AxiosInstance } from "axi
 import { Buffer } from "buffer";
 import { deriveSubmissionConfig } from "./caip2-mappings";
 import { DerivationPath, getNetworkConfig } from "./constants";
+import { normalizeEvmTransactionForNetwork } from "./evm-transaction";
 import {
   type PrepareResponse,
   type PrepareErrorResponse,
@@ -56,7 +57,8 @@ import {
   type SignAndSendTransactionParams,
   type SignedTransaction,
   type SignedTransactionResult,
-  type SignMessageParams,
+  type SignEthereumMessageParams,
+  type SignUtf8MessageParams,
   type SignTransactionParams,
   type SignTypedDataParams,
   type UserConfig,
@@ -309,7 +311,10 @@ export class PhantomClient {
 
     // For EVM transactions, use the object format with kind and bytes
     if (isEvmTransaction) {
-      return { kind: "RLP_ENCODED", bytes: encodedTransaction };
+      return {
+        kind: "RLP_ENCODED",
+        bytes: normalizeEvmTransactionForNetwork(encodedTransaction, networkId),
+      };
     }
 
     // TWO-PHASE SPENDING LIMITS FLOW (Solana user-wallet only)
@@ -569,7 +574,7 @@ export class PhantomClient {
   /**
    * Sign an Ethereum message using EIP-191 personal sign
    */
-  async ethereumSignMessage(params: SignMessageParams): Promise<string> {
+  async ethereumSignMessage(params: SignEthereumMessageParams): Promise<string> {
     const walletId = params.walletId;
     const messageParam = params.message;
     const networkIdParam = params.networkId;
@@ -623,7 +628,7 @@ export class PhantomClient {
   /**
    * Sign a UTF-8 message for Solana
    */
-  async signUtf8Message(params: SignMessageParams): Promise<string> {
+  async signUtf8Message(params: SignUtf8MessageParams): Promise<string> {
     const walletId = params.walletId;
     const messageParam = params.message;
     const networkIdParam = params.networkId;

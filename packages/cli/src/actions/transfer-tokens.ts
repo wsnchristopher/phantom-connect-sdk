@@ -16,21 +16,21 @@ import {
   getAssociatedTokenAddress,
   getMint,
 } from "@solana/spl-token";
-import { createAction } from "../utils/actions.js";
-import { normalizeNetworkId, normalizeSwapperChainId } from "../utils/network.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { getEthereumAddress, estimateGas, fetchGasPrice, fetchNonce, assertEvmAddress } from "../utils/evm.js";
-import { resolveSolanaRpcUrl, resolveEvmRpcUrl } from "../utils/rpc.js";
-import { parseBaseUnitAmount, parseUiAmount, requirePositiveAmount } from "../utils/amount.js";
-import { runSimulation } from "../utils/simulation.js";
+import { createAction } from "../utils/actions";
+import { normalizeNetworkId, normalizeSwapperChainId } from "../utils/network";
+import { getSolanaAddress } from "../utils/solana";
+import { getEthereumAddress, estimateGas, fetchGasPrice, fetchNonce, assertEvmAddress } from "../utils/evm";
+import { resolveSolanaRpcUrl, resolveEvmRpcUrl } from "../utils/rpc";
+import { parseBaseUnitAmount, parseUiAmount, requirePositiveAmount } from "../utils/amount";
+import { runSimulation } from "../utils/simulation";
 import {
   WalletIdSchema,
   DerivationIndexSchema,
   Caip2ChainIdSchema,
   EthereumAddressSchema,
   SolanaAddressSchema,
-} from "../utils/schemas.js";
-import { PendingConfirmationSchema } from "../utils/output-schemas.js";
+} from "../utils/schemas";
+import { PendingConfirmationSchema } from "../utils/output-schemas";
 
 const DEFAULT_COMMITMENT: Commitment = "confirmed";
 
@@ -73,7 +73,6 @@ const TransferTokensSchema = z.object({
       "Token decimals — optional for Solana (fetched from chain if omitted); required for ERC-20 tokens when amountUnit is 'ui'.",
     ),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index for the account (default: 0)"),
-  rpcUrl: z.string().optional().describe("Optional RPC URL override (Solana or EVM, defaults based on networkId)"),
   createAssociatedTokenAccount: z
     .union([z.boolean(), z.stringbool()])
     .default(true)
@@ -148,7 +147,6 @@ const transferTokensAction = createAction({
     const derivationIndex = params.derivationIndex;
     const amountUnit = params.amountUnit;
     const tokenMint = params.tokenMint;
-    const rpcUrlOverride = params.rpcUrl;
     const confirmed = params.confirmed;
 
     // ─── EVM path ────────────────────────────────────────────────────────────
@@ -161,7 +159,7 @@ const transferTokensAction = createAction({
       // Extract numeric chainId from "eip155:N"
       const chainId = parseInt(normalizedNetworkId.split(":")[1], 10);
 
-      const rpcUrl = resolveEvmRpcUrl(normalizedNetworkId, rpcUrlOverride);
+      const rpcUrl = resolveEvmRpcUrl(normalizedNetworkId);
 
       let txTo: string;
       let value: string;
@@ -274,7 +272,7 @@ const transferTokensAction = createAction({
     // ─── Solana path ──────────────────────────────────────────────────────────
     const createAta = params.createAssociatedTokenAccount;
 
-    const rpcUrl = resolveSolanaRpcUrl(normalizedNetworkId, rpcUrlOverride);
+    const rpcUrl = resolveSolanaRpcUrl(normalizedNetworkId);
     const connection = new Connection(rpcUrl, DEFAULT_COMMITMENT);
 
     const fromAddress = await getSolanaAddress(context, walletId, derivationIndex);

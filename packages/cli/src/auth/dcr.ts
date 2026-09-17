@@ -5,8 +5,8 @@
 
 import axios, { type AxiosError } from "axios";
 import { randomUUID } from "crypto";
-import { Logger } from "../utils/logger.js";
-import type { DCRClientConfig } from "../session/types.js";
+import { Logger } from "../utils/logger";
+import type { DCRClientConfig } from "../session/types";
 
 /**
  * RFC 7591 Dynamic Client Registration request payload

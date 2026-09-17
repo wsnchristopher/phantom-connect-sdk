@@ -3,7 +3,7 @@ import { getTokenBalancesTool } from "./get-token-balances";
 const mockResolveNetworks = jest.fn();
 const mockFetchPortfolioBalances = jest.fn();
 
-jest.mock("../utils/portfolio.js", () => ({
+jest.mock("../utils/portfolio", () => ({
   ALL_NETWORKS: ["solana", "ethereum", "base"],
   resolveNetworks: (...args: unknown[]) => mockResolveNetworks(...args),
   fetchPortfolioBalances: (...args: unknown[]) => mockFetchPortfolioBalances(...args),

@@ -7,8 +7,8 @@
 
 import type { NetworkId } from "@phantom/client";
 import { PerpsClient } from "@phantom/perps-client";
-import { getEthereumAddress } from "./evm.js";
-import type { ToolContext } from "../tools/types.js";
+import { getEthereumAddress } from "./evm";
+import type { ToolContext } from "../tools/types";
 
 /** Arbitrum — the default chain ID used for Hyperliquid EIP-712 signing */
 const ARBITRUM_NETWORK_ID = "eip155:42161" as NetworkId;

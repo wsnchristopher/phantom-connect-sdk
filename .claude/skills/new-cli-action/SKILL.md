@@ -1,6 +1,6 @@
 ---
 name: new-cli-action
-description: Scaffold a new CLI action for the internal-connect-sdk. Use when the user asks to add a new command, tool, or action to the Phantom CLI/MCP. Guides through creating the action file, registering the command in the appropriate CLI group, and adding the tool to the OpenClaw registry.
+description: Scaffold a new CLI action for this SDK repository. Use when the user asks to add a new command, tool, or action to the Phantom CLI/MCP. Guides through creating the action file, registering the command in the appropriate CLI group, and adding the tool to the OpenClaw registry.
 user-invocable: true
 allowed-tools:
   - Read

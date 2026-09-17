@@ -1,5 +1,5 @@
-import { RateLimitError, PaymentRequiredError } from "./errors.js";
-import type { X402Response, X429Response } from "./types.js";
+import { RateLimitError, PaymentRequiredError } from "./errors";
+import type { X402Response, X429Response } from "./types";
 
 export interface Logger {
   debug(msg: string): void;

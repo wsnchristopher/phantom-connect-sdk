@@ -14,12 +14,12 @@ import { WalletServiceError } from "@phantom/client";
 import { isSolanaChain } from "@phantom/utils";
 import { base64urlEncode } from "@phantom/base64url";
 import bs58 from "bs58";
-import { createAction } from "../utils/actions.js";
-import { normalizeNetworkId, normalizeSwapperChainId } from "../utils/network.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { runSimulation } from "../utils/simulation.js";
-import { WalletIdSchema, DerivationIndexSchema, SolanaCaip2ChainIdSchema, Base64Schema } from "../utils/schemas.js";
-import { PendingConfirmationSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { normalizeNetworkId, normalizeSwapperChainId } from "../utils/network";
+import { getSolanaAddress } from "../utils/solana";
+import { runSimulation } from "../utils/simulation";
+import { WalletIdSchema, DerivationIndexSchema, SolanaCaip2ChainIdSchema, Base64Schema } from "../utils/schemas";
+import { PendingConfirmationSchema } from "../utils/output-schemas";
 
 const SendSolanaTransactionSchema = z.object({
   transaction: Base64Schema.describe(

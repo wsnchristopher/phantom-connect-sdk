@@ -8,10 +8,10 @@
 import { Cli, z } from "incur";
 import type { NetworkId } from "@phantom/client";
 import { isSolanaChain } from "@phantom/utils";
-import { createAction } from "../utils/actions.js";
-import { normalizeNetworkId } from "../utils/network.js";
-import { WalletIdSchema, DerivationIndexSchema, SolanaCaip2ChainIdSchema } from "../utils/schemas.js";
-import { SignatureOutputSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { normalizeNetworkId } from "../utils/network";
+import { WalletIdSchema, DerivationIndexSchema, SolanaCaip2ChainIdSchema } from "../utils/schemas";
+import { SignatureOutputSchema } from "../utils/output-schemas";
 
 const SignSolanaMessageSchema = z.object({
   message: z.string().describe("The UTF-8 message to sign"),

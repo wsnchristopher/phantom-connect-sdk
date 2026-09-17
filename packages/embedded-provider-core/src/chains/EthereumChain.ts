@@ -1,7 +1,28 @@
 import type { EthTransactionRequest, IEthereumChain } from "@phantom/chain-interfaces";
-import { NetworkId, chainIdToNetworkId, networkIdToChainId } from "@phantom/constants";
+import { NetworkId, chainIdToNetworkId, networkIdToChainId, parseEvmChainId } from "@phantom/constants";
 import { EventEmitter } from "eventemitter3";
 import type { EmbeddedProvider } from "../embedded-provider";
+
+function parseSafeChainIdNumber(chainId: string | number | bigint): number {
+  const numericChainId = parseEvmChainId(chainId);
+
+  if (numericChainId > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new Error(`Invalid chainId: ${chainId}`);
+  }
+
+  return Number(numericChainId);
+}
+
+function getTransactionNetworkId(chainId: string | number | bigint | undefined): NetworkId | undefined {
+  if (chainId == null) return undefined;
+
+  const numericChainId = parseSafeChainIdNumber(chainId);
+  if (numericChainId === 0) throw new Error(`Unsupported chainId: ${chainId}`);
+
+  const networkId = chainIdToNetworkId(numericChainId);
+  if (!networkId) throw new Error(`Unsupported chainId: ${chainId}`);
+  return networkId;
+}
 
 /**
  * Embedded Ethereum chain implementation that is EIP-1193 compliant
@@ -68,16 +89,7 @@ export class EmbeddedEthereumChain implements IEthereumChain {
   }
 
   async signTransaction(transaction: EthTransactionRequest): Promise<string> {
-    // If the transaction has a chainId, use that network for signing
-    let networkId = this.currentNetworkId;
-    if (transaction.chainId) {
-      const numericChainId =
-        typeof transaction.chainId === "number" ? transaction.chainId : parseInt(transaction.chainId, 16);
-      const txNetworkId = chainIdToNetworkId(numericChainId);
-      if (txNetworkId) {
-        networkId = txNetworkId;
-      }
-    }
+    const networkId = getTransactionNetworkId(transaction.chainId) ?? this.currentNetworkId;
 
     const result = await this.provider.signTransaction({
       transaction,
@@ -89,10 +101,9 @@ export class EmbeddedEthereumChain implements IEthereumChain {
 
   async sendTransaction(transaction: EthTransactionRequest): Promise<string> {
     // If the transaction has a chainId, switch to that chain first
-    if (transaction.chainId) {
-      const numericChainId =
-        typeof transaction.chainId === "number" ? transaction.chainId : parseInt(transaction.chainId, 16);
-      await this.switchChain(numericChainId);
+    const transactionNetworkId = getTransactionNetworkId(transaction.chainId);
+    if (transactionNetworkId) {
+      await this.switchChain(networkIdToChainId(transactionNetworkId) as number);
     }
 
     const result = await this.provider.signAndSendTransaction({
@@ -107,13 +118,7 @@ export class EmbeddedEthereumChain implements IEthereumChain {
   }
 
   switchChain(chainId: number | string): Promise<void> {
-    // Convert string to number if needed, detecting hex vs decimal
-    const numericChainId =
-      typeof chainId === "string"
-        ? chainId.toLowerCase().startsWith("0x")
-          ? parseInt(chainId, 16)
-          : parseInt(chainId, 10)
-        : chainId;
+    const numericChainId = parseSafeChainIdNumber(chainId);
 
     const networkId = chainIdToNetworkId(numericChainId);
     if (!networkId) {
@@ -201,15 +206,11 @@ export class EmbeddedEthereumChain implements IEthereumChain {
       case "eth_signTransaction": {
         const [transaction] = args.params as [EthTransactionRequest];
         // If the transaction has a chainId, use that NetworkId
-        const networkIdFromTx = transaction.chainId
-          ? chainIdToNetworkId(
-              typeof transaction.chainId === "number" ? transaction.chainId : parseInt(transaction.chainId, 16),
-            )
-          : null;
+        const networkIdFromTx = getTransactionNetworkId(transaction.chainId);
 
         const signResult = await this.provider.signTransaction({
           transaction,
-          networkId: networkIdFromTx || this.currentNetworkId,
+          networkId: networkIdFromTx ?? this.currentNetworkId,
         });
         return signResult.rawTransaction as T;
       }
@@ -217,15 +218,11 @@ export class EmbeddedEthereumChain implements IEthereumChain {
       case "eth_sendTransaction": {
         const [transaction] = args.params as [EthTransactionRequest];
         // If the transaction has a chainId, submit it to that NetworkId
-        const networkIdFromTx = transaction.chainId
-          ? chainIdToNetworkId(
-              typeof transaction.chainId === "number" ? transaction.chainId : parseInt(transaction.chainId, 16),
-            )
-          : null;
+        const networkIdFromTx = getTransactionNetworkId(transaction.chainId);
 
         const sendResult = await this.provider.signAndSendTransaction({
           transaction,
-          networkId: networkIdFromTx || this.currentNetworkId,
+          networkId: networkIdFromTx ?? this.currentNetworkId,
         });
         return sendResult.hash as T;
       }
@@ -242,8 +239,10 @@ export class EmbeddedEthereumChain implements IEthereumChain {
 
       case "wallet_switchEthereumChain": {
         const [{ chainId }] = args.params as [{ chainId: string }];
-        const numericChainId = parseInt(chainId, 16);
-        await this.switchChain(numericChainId);
+        if (!chainId.toLowerCase().startsWith("0x")) {
+          throw new Error(`Invalid chainId: ${chainId}`);
+        }
+        await this.switchChain(chainId);
         return undefined as T;
       }
 

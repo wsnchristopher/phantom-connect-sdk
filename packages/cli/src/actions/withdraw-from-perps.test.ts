@@ -2,11 +2,11 @@ import { withdrawFromPerpsTool } from "./withdraw-from-perps";
 
 const mockPerpsClient = { withdrawFromSpot: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
-jest.mock("../utils/solana.js", () => ({
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/solana", () => ({
   getSolanaAddress: jest.fn().mockResolvedValue("G37x7vFjCQfHD2WU2zLLQ2b2tSHXhpePtzUzesGG35q"),
 }));
-jest.mock("../utils/evm.js", () => ({
+jest.mock("../utils/evm", () => ({
   getEthereumAddress: jest.fn().mockResolvedValue("0x6484ce5200d78542156d5cd5e964dfa7e49d9b62"),
 }));
 
@@ -26,7 +26,7 @@ const makeContext = () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.withdrawFromSpot.mockResolvedValue({ requestId: "0xabc", details: {}, execution: {} });
 });

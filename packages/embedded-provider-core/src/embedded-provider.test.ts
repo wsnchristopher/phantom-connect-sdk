@@ -104,6 +104,16 @@ describe("EmbeddedProvider Core", () => {
     provider = new EmbeddedProvider(config, mockPlatform, mockLogger);
   });
 
+  const configureSigningProvider = (client: Record<string, jest.Mock>) => {
+    mockPlatform.storage.getSession.mockResolvedValue({
+      accountDerivationIndex: 0,
+      authenticatorCreatedAt: Date.now(),
+      authenticatorExpiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    } as any);
+    provider["client"] = client as any;
+    provider["walletId"] = "test-wallet-id";
+  };
+
   describe("Construction", () => {
     it("should create embedded provider with platform adapters and logger", () => {
       expect(provider).toBeInstanceOf(EmbeddedProvider);
@@ -115,6 +125,50 @@ describe("EmbeddedProvider Core", () => {
       expect(provider.isConnected()).toBe(false);
       expect(provider.getAddresses()).toEqual([]);
     });
+  });
+
+  describe("direct EVM transaction chain binding", () => {
+    it.each(["signTransaction", "signAndSendTransaction"] as const)(
+      "rejects an explicit zero chainId before %s parsing or client calls",
+      async method => {
+        const clientMethod = jest.fn();
+        provider["client"] = { [method]: clientMethod } as any;
+        provider["walletId"] = "test-wallet-id";
+        provider["addresses"] = [{ addressType: "Ethereum", address: "0x0000000000000000000000000000000000000001" }];
+        jest.spyOn(provider as any, "ensureValidAuthenticator").mockResolvedValue(undefined);
+        const { parseToKmsTransaction } = jest.requireMock("@phantom/parsers");
+
+        await expect(
+          provider[method]({
+            transaction: { to: "0x0000000000000000000000000000000000000001", chainId: 0 },
+            networkId: "eip155:1",
+          } as any),
+        ).rejects.toThrow("Unsupported EVM transaction chainId: 0");
+        expect(parseToKmsTransaction).not.toHaveBeenCalled();
+        expect(clientMethod).not.toHaveBeenCalled();
+      },
+    );
+
+    it.each(["signTransaction", "signAndSendTransaction"] as const)(
+      "rejects a chain mismatch before %s",
+      async method => {
+        const clientMethod = jest.fn();
+        provider["client"] = { [method]: clientMethod } as any;
+        provider["walletId"] = "test-wallet-id";
+        provider["addresses"] = [{ addressType: "Ethereum", address: "0x0000000000000000000000000000000000000001" }];
+        jest.spyOn(provider as any, "ensureValidAuthenticator").mockResolvedValue(undefined);
+        const { parseToKmsTransaction } = jest.requireMock("@phantom/parsers");
+
+        await expect(
+          provider[method]({
+            transaction: { to: "0x0000000000000000000000000000000000000001", chainId: 137 },
+            networkId: "eip155:1",
+          } as any),
+        ).rejects.toThrow("chainId 137 does not match network chainId 1");
+        expect(parseToKmsTransaction).not.toHaveBeenCalled();
+        expect(clientMethod).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe("Platform Integration", () => {
@@ -266,6 +320,39 @@ describe("EmbeddedProvider Core", () => {
       // The stamper won't be called directly for signMessage - the client handles it
       // But we can verify the client's signUtf8Message was called (for Solana)
       expect(provider["client"].signUtf8Message).toHaveBeenCalled();
+    });
+
+    it("preserves Solana string signing through the UTF-8 contract", async () => {
+      const signUtf8Message = jest.fn().mockResolvedValue("signed-message");
+      configureSigningProvider({ signUtf8Message });
+
+      await provider.signMessage({ message: "snowman ☃", networkId: "solana:101" });
+
+      expect(signUtf8Message).toHaveBeenCalledWith({
+        walletId: "test-wallet-id",
+        message: "snowman ☃",
+        networkId: "solana:101",
+        derivationIndex: 0,
+      });
+    });
+
+    it.each([
+      ["exact non-UTF-8 hex bytes", "0x00ff80", "AP-A"],
+      ["empty hex data", "0x", ""],
+      ["left-padded odd hex data", "0xabc", "Crw"],
+      ["Unicode text", "雪☃", "6Zuq4piD"],
+    ])("encodes EVM %s exactly once", async (_name, message, encodedMessage) => {
+      const ethereumSignMessage = jest.fn().mockResolvedValue("signed-message");
+      configureSigningProvider({ ethereumSignMessage });
+
+      await provider.signEthereumMessage({ message, networkId: "eip155:1" });
+
+      expect(ethereumSignMessage).toHaveBeenCalledWith({
+        walletId: "test-wallet-id",
+        message: encodedMessage,
+        networkId: "eip155:1",
+        derivationIndex: 0,
+      });
     });
 
     it.skip("should call platform stamper getKeyInfo during client initialization", async () => {

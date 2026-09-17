@@ -12,10 +12,10 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { buyTokenTool } from "./buy-token.js";
-import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema } from "../utils/schemas.js";
-import { BuyTokenOutputSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { buyTokenTool } from "./buy-token";
+import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema } from "../utils/schemas";
+import { BuyTokenOutputSchema } from "../utils/output-schemas";
 
 // Hypercore chain ID used by the Phantom swapper backend
 const HYPERCORE_CHAIN_ID = "hypercore:mainnet";

@@ -3,8 +3,8 @@
  */
 
 import { z } from "incur";
-import type { ToolContext } from "../tools/types.js";
-import { Caip19Schema } from "./schemas.js";
+import type { ToolContext } from "../tools/types";
+import { Caip19Schema } from "./schemas";
 import type { PhantomApiClient } from "@phantom/phantom-api-client";
 
 /**

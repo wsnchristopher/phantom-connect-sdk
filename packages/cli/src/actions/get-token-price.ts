@@ -6,9 +6,9 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { ALL_NETWORKS, fetchPortfolioBalance, NETWORK_CONFIGS } from "../utils/portfolio.js";
-import { NATIVE_TOKEN_CAIP19 } from "../utils/tokens.js";
+import { createAction } from "../utils/actions";
+import { ALL_NETWORKS, fetchPortfolioBalance, NETWORK_CONFIGS } from "../utils/portfolio";
+import { NATIVE_TOKEN_CAIP19 } from "../utils/tokens";
 
 const GetTokenPriceSchema = z.object({
   address: z

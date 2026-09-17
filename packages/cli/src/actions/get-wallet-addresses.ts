@@ -3,8 +3,8 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { DerivationIndexSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { DerivationIndexSchema } from "../utils/schemas";
 
 const GetWalletAddressesSchema = z.object({
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index for the addresses (default: 0)"),

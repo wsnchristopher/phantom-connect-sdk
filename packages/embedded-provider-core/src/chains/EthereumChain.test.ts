@@ -23,6 +23,9 @@ describe("EmbeddedEthereumChain", () => {
       signMessage: jest.fn().mockResolvedValue({
         signature: "0xsignature",
       }),
+      signEthereumMessage: jest.fn().mockResolvedValue({
+        signature: "0xsignature",
+      }),
       signTypedDataV4: jest.fn().mockResolvedValue({
         signature: "0xtypedsignature",
       }),
@@ -32,6 +35,18 @@ describe("EmbeddedEthereumChain", () => {
     } as any;
 
     ethereumChain = new EmbeddedEthereumChain(mockProvider);
+  });
+
+  it("forwards personal_sign hex data unchanged to the embedded provider", async () => {
+    const address = "0x1234567890abcdef1234567890abcdef12345678";
+
+    const signature = await ethereumChain.signPersonalMessage("0x00ff80", address);
+
+    expect(signature).toBe("0xsignature");
+    expect(mockProvider.signEthereumMessage).toHaveBeenCalledWith({
+      message: "0x00ff80",
+      networkId: NetworkId.ETHEREUM_MAINNET,
+    });
   });
 
   describe("isConnected", () => {
@@ -205,21 +220,61 @@ describe("EmbeddedEthereumChain", () => {
       });
     });
 
-    it("should use current network when no chainId is provided", async () => {
+    it("should parse decimal chainId strings as decimal", async () => {
       const transaction = {
-        from: "0x1234567890abcdef1234567890abcdef12345678",
         to: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
-        value: "0x9184e72a000",
+        value: "0x1",
+        chainId: "137",
       };
 
       await ethereumChain.signTransaction(transaction);
 
-      // Should use default Ethereum mainnet
       expect(mockProvider.signTransaction).toHaveBeenCalledWith({
         transaction,
-        networkId: NetworkId.ETHEREUM_MAINNET,
+        networkId: NetworkId.POLYGON_MAINNET,
       });
     });
+
+    it("should reject an explicit zero chainId before signing", async () => {
+      const transaction = {
+        to: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+        value: "0x1",
+        chainId: "0x0",
+      };
+
+      await expect(ethereumChain.signTransaction(transaction)).rejects.toThrow("Unsupported chainId: 0x0");
+      expect(mockProvider.signTransaction).not.toHaveBeenCalled();
+    });
+
+    it("should reject unsupported and invalid transaction chain IDs", async () => {
+      await expect(
+        ethereumChain.signTransaction({ to: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", chainId: "56" }),
+      ).rejects.toThrow("Unsupported chainId: 56");
+      await expect(
+        ethereumChain.signTransaction({ to: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd", chainId: "0xnope" }),
+      ).rejects.toThrow("Invalid chainId: 0xnope");
+      expect(mockProvider.signTransaction).not.toHaveBeenCalled();
+    });
+
+    it.each([{}, { chainId: undefined }])(
+      "should use current network when chainId is missing or undefined",
+      async chain => {
+        const transaction = {
+          from: "0x1234567890abcdef1234567890abcdef12345678",
+          to: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd",
+          value: "0x9184e72a000",
+          ...chain,
+        };
+
+        await ethereumChain.signTransaction(transaction);
+
+        // Should use default Ethereum mainnet
+        expect(mockProvider.signTransaction).toHaveBeenCalledWith({
+          transaction,
+          networkId: NetworkId.ETHEREUM_MAINNET,
+        });
+      },
+    );
   });
 
   describe("switchChain", () => {
@@ -437,6 +492,24 @@ describe("EmbeddedEthereumChain", () => {
       const chainId = await ethereumChain.getChainId();
       expect(chainId).toBe(137);
       expect(emitSpy).toHaveBeenCalledWith("chainChanged", "0x89");
+    });
+
+    it("rejects malformed chain IDs instead of partially parsing them", async () => {
+      await expect(
+        ethereumChain.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: "0x89invalid" }],
+        }),
+      ).rejects.toThrow("Invalid chainId: 0x89invalid");
+    });
+
+    it.each(["137", "89", "0x", "0x89invalid"])("rejects non-hex EIP-3326 chainId: %s", async chainId => {
+      await expect(
+        ethereumChain.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId }],
+        }),
+      ).rejects.toThrow(`Invalid chainId: ${chainId}`);
     });
 
     it("should handle wallet_switchEthereumChain for all supported networks", async () => {

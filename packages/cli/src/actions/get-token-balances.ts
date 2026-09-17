@@ -4,8 +4,8 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { ALL_NETWORKS, resolveNetworks, fetchPortfolioBalances } from "../utils/portfolio.js";
+import { createAction } from "../utils/actions";
+import { ALL_NETWORKS, resolveNetworks, fetchPortfolioBalances } from "../utils/portfolio";
 
 const GetTokenBalancesSchema = z.object({
   networks: z

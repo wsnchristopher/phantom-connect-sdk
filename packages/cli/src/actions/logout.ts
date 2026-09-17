@@ -6,7 +6,7 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
+import { createAction } from "../utils/actions";
 
 const LogoutSchema = z.object({});
 

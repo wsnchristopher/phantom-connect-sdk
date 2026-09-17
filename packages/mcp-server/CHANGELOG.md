@@ -1,5 +1,16 @@
 # @phantom/mcp-server
 
+## 1.2.8
+
+### Patch Changes
+
+- 86997b0: Fix device-code session creation after consent, and include HTTP status, service error text, and request ID in provisioning failures.
+- fcf368b: validate perp responses
+- Updated dependencies [86997b0]
+- Updated dependencies [fcf368b]
+- Updated dependencies [b9e1497]
+  - @phantom/cli@2.0.0
+
 ## 1.2.6
 
 ### Patch Changes

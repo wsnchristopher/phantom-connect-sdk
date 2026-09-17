@@ -1,6 +1,6 @@
 {
   "name": "@phantom/cli",
-  "version": "1.2.7",
+  "version": "2.0.1",
   "description": "Phantom CLI — interact with your Phantom wallet from the terminal",
   "repository": {
     "type": "git",
@@ -15,7 +15,6 @@
   "scripts": {
     "?pack-release": "When https://github.com/changesets/changesets/issues/432 has a solution we can remove this trick",
     "pack-release": "rimraf ./_release && yarn pack && mkdir ./_release && tar zxvf ./package.tgz --directory ./_release && rm ./package.tgz",
-    "postinstall": "patch-package",
     "build": "rimraf ./dist && tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
@@ -38,10 +37,9 @@
     "@phantom/utils": "workspace:^",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.95.5",
-    "axios": "1.15.1",
+    "axios": "1.15.2",
     "bs58": "^6.0.0",
-    "incur": "0.4.1",
-    "patch-package": "^8.0.1",
+    "incur": "^0.4.10",
     "qrcode-terminal": "^0.12.0",
     "viem": "^2.47.16",
     "zod": "^4.3.6"

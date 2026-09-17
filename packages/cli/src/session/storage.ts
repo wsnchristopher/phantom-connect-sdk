@@ -3,7 +3,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
-import type { SessionData } from "./types.js";
+import type { SessionData } from "./types";
 
 /**
  * SessionStorage manages secure filesystem storage for OAuth sessions.

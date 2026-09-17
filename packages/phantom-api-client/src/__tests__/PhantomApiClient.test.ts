@@ -1,5 +1,5 @@
-import { PhantomApiClient } from "../PhantomApiClient.js";
-import { RateLimitError, PaymentRequiredError } from "../errors.js";
+import { PhantomApiClient } from "../PhantomApiClient";
+import { RateLimitError, PaymentRequiredError } from "../errors";
 
 function mockFetch(status: number, body: unknown): jest.SpyInstance {
   return jest.spyOn(globalThis, "fetch").mockResolvedValue({

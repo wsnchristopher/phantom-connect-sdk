@@ -9,6 +9,7 @@ const makeContext = () => ({
     isInitialized: jest.fn().mockReturnValue(true),
     getSession: jest.fn().mockReturnValue({ walletId: "wallet-1", organizationId: "org-1", appId: "app-1" }),
     getClient: jest.fn(),
+    tryRefreshSession: jest.fn().mockResolvedValue(false),
     resetSession: jest.fn().mockResolvedValue(undefined),
   },
 });
@@ -27,14 +28,42 @@ const makeAction = (run: (args: any) => Promise<any>) =>
 
 describe("createAction", () => {
   describe("auth errors", () => {
-    it("calls resetSession and throws AUTH_EXPIRED on 401", async () => {
+    it("resets the session when token refresh cannot recover a 401", async () => {
       const ctx = makeContext();
       const action = makeAction(async () => {
         throw Object.assign(new Error("Unauthorized"), { response: { status: 401 } });
       });
 
       await expect(action.tool.handler({}, ctx as any)).rejects.toThrow(/^AUTH_EXPIRED:/);
+      expect(ctx.manager.tryRefreshSession).toHaveBeenCalledTimes(1);
       expect(ctx.manager.resetSession).toHaveBeenCalledTimes(1);
+    });
+
+    it("resets the session when token refresh rejects", async () => {
+      const ctx = makeContext();
+      ctx.manager.tryRefreshSession.mockRejectedValueOnce(new Error("Refresh failed"));
+      const action = makeAction(async () => {
+        throw Object.assign(new Error("Unauthorized"), { response: { status: 401 } });
+      });
+
+      await expect(action.tool.handler({}, ctx as any)).rejects.toThrow(/^AUTH_EXPIRED:/);
+      expect(ctx.manager.tryRefreshSession).toHaveBeenCalledTimes(1);
+      expect(ctx.manager.resetSession).toHaveBeenCalledTimes(1);
+    });
+
+    it("refreshes and retries once before resetting the session on 401", async () => {
+      const ctx = makeContext();
+      ctx.manager.tryRefreshSession.mockResolvedValue(true);
+      const run = jest
+        .fn()
+        .mockRejectedValueOnce(Object.assign(new Error("Unauthorized"), { response: { status: 401 } }))
+        .mockResolvedValueOnce({ result: "retried" });
+      const action = makeAction(run);
+
+      await expect(action.tool.handler({}, ctx as any)).resolves.toEqual({ result: "retried" });
+      expect(ctx.manager.tryRefreshSession).toHaveBeenCalledTimes(1);
+      expect(run).toHaveBeenCalledTimes(2);
+      expect(ctx.manager.resetSession).not.toHaveBeenCalled();
     });
 
     it("calls resetSession and throws AUTH_EXPIRED on 403", async () => {
@@ -45,6 +74,43 @@ describe("createAction", () => {
 
       await expect(action.tool.handler({}, ctx as any)).rejects.toThrow(/^AUTH_EXPIRED:/);
       expect(ctx.manager.resetSession).toHaveBeenCalledTimes(1);
+    });
+
+    it("preserves submission-failed 403 errors without resetting the session", async () => {
+      const ctx = makeContext();
+      const submissionError = Object.assign(new Error("Transaction submission failed"), {
+        response: {
+          status: 403,
+          data: {
+            error: { code: -32009, message: "Transaction submission failed" },
+            type: "submission-failed",
+            title: "Transaction submission failed",
+            detail: "Transaction submission failed",
+            upstreamStatus: 403,
+            requestId: "request-1",
+          },
+        },
+      });
+      const action = makeAction(async () => {
+        throw submissionError;
+      });
+
+      const thrown = await action.tool.handler({}, ctx as any).catch(error => error);
+
+      expect(thrown).toBe(submissionError);
+      expect(thrown.response).toEqual({
+        status: 403,
+        data: {
+          error: { code: -32009, message: "Transaction submission failed" },
+          type: "submission-failed",
+          title: "Transaction submission failed",
+          detail: "Transaction submission failed",
+          upstreamStatus: 403,
+          requestId: "request-1",
+        },
+      });
+      expect(ctx.manager.tryRefreshSession).not.toHaveBeenCalled();
+      expect(ctx.manager.resetSession).not.toHaveBeenCalled();
     });
 
     it("rethrows non-auth errors without calling resetSession", async () => {

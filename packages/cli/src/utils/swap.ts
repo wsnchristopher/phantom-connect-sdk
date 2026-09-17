@@ -15,15 +15,15 @@ import type {
   SolanaOriginCrossChainStep,
   EvmOriginCrossChainStep,
   PhantomQuotesResponse,
-} from "./quotes.js";
+} from "./quotes";
 import { PublicKey } from "@solana/web3.js";
-import { normalizeNetworkId } from "./network.js";
-import { fetchNonce, fetchGasPrice, estimateGas } from "./evm.js";
-import { sendApprovalIfNeeded } from "./allowance.js";
-import { getExplorerTxUrl } from "./explorers.js";
-import { resolveEvmRpcUrl } from "./rpc.js";
+import { normalizeNetworkId } from "./network";
+import { fetchNonce, fetchGasPrice, estimateGas } from "./evm";
+import { sendApprovalIfNeeded } from "./allowance";
+import { getExplorerTxUrl } from "./explorers";
+import { resolveEvmRpcUrl } from "./rpc";
 import type { PhantomApiClient } from "@phantom/phantom-api-client";
-import type { Logger } from "./logger.js";
+import type { Logger } from "./logger";
 
 /**
  * Slip44 identifier for the native token of each EVM chain as used by the Phantom quotes API.

@@ -10,10 +10,10 @@ import { Cli, z } from "incur";
 import { isEthereumChain } from "@phantom/utils";
 import { chainIdToNetworkId } from "@phantom/constants";
 import { stringToBase64url } from "@phantom/base64url";
-import { createAction } from "../utils/actions.js";
-import { parseChainId } from "../utils/params.js";
-import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema } from "../utils/schemas.js";
-import { SignatureOutputSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { parseChainId } from "../utils/params";
+import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema } from "../utils/schemas";
+import { SignatureOutputSchema } from "../utils/output-schemas";
 
 const SignEvmPersonalMessageSchema = z.object({
   message: z.string().describe("The UTF-8 message to sign"),

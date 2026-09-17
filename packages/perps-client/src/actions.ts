@@ -13,7 +13,7 @@ import type {
   HlCancelAction,
   HlUpdateLeverageAction,
   HlUsdClassTransferAction,
-} from "./types.js";
+} from "./schemas";
 import {
   HYPERLIQUID_EXCHANGE_DOMAIN,
   HYPERLIQUID_SIGN_TRANSACTION_DOMAIN,
@@ -22,7 +22,7 @@ import {
   USD_CLASS_TRANSFER_TYPE,
   HYPERLIQUID_MAINNET_CHAIN_ID,
   MARKET_ORDER_SLIPPAGE,
-} from "./constants.js";
+} from "./constants";
 
 /**
  * Computes the connectionId hash for exchange actions (orders, cancel, leverage).

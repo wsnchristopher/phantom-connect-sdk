@@ -7,7 +7,7 @@ import {
   buildExchangeActionTypedData,
   buildUsdClassTransferTypedData,
 } from "./actions";
-import type { HlOrderAction, HlCancelAction, HlUpdateLeverageAction, HlUsdClassTransferAction } from "./types";
+import type { HlOrderAction, HlCancelAction, HlUpdateLeverageAction, HlUsdClassTransferAction } from "./schemas";
 
 // ── splitSignature ───────────────────────────────────────────────────────────
 

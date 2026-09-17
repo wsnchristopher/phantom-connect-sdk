@@ -3,6 +3,7 @@ export { generateKeyPair, type Keypair } from "@phantom/crypto";
 export type * from "./types";
 export * from "./errors";
 export * from "./caip2-mappings";
+export { normalizeEvmTransactionForNetwork } from "./evm-transaction";
 export { DerivationPath, getDerivationPathForNetwork, getNetworkConfig } from "./constants";
 export type { NetworkConfig } from "./constants";
 export { NetworkId } from "@phantom/constants";

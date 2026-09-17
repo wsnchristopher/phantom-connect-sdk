@@ -8,21 +8,21 @@
  * Use withdraw_from_perps first if funds are in the perp account.
  */
 
+import { WithdrawFromSpotResultSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { getEthereumAddress } from "../utils/evm.js";
-import { getSolanaAddress } from "../utils/solana.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { getEthereumAddress } from "../utils/evm";
+import { getSolanaAddress } from "../utils/solana";
 import { isSolanaChain } from "@phantom/utils";
-import { normalizeSwapperChainId } from "../utils/network.js";
+import { normalizeSwapperChainId } from "../utils/network";
 import {
   WalletIdSchema,
   DerivationIndexSchema,
   Caip2ChainIdSchema,
   Caip19Schema,
   PositiveNumericStringSchema,
-} from "../utils/schemas.js";
-import { WithdrawFromSpotResultSchema } from "../utils/output-schemas.js";
+} from "../utils/schemas";
 
 const WithdrawFromHyperliquidSpotSchema = z.object({
   amountUsdc: PositiveNumericStringSchema.describe('Amount of USDC to bridge out (e.g. "8.0" for 8 USDC)'),

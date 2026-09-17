@@ -9,15 +9,15 @@ jest.mock("@phantom/constants", () => ({
   }),
 }));
 
-jest.mock("../utils/evm.js", () => ({
+jest.mock("../utils/evm", () => ({
   getEthereumAddress: jest.fn().mockResolvedValue("0xwalletowner00000000000000000000000000000"),
 }));
 
-jest.mock("../utils/allowance.js", () => ({
+jest.mock("../utils/allowance", () => ({
   fetchERC20Allowance: jest.fn().mockResolvedValue(2_066_891n),
 }));
 
-jest.mock("../utils/rpc.js", () => ({
+jest.mock("../utils/rpc", () => ({
   resolveEvmRpcUrl: jest.fn().mockReturnValue("https://rpc.example.com"),
 }));
 
@@ -70,6 +70,11 @@ describe("get_token_allowance — schema", () => {
     expect(getTokenAllowanceTool.annotations?.readOnlyHint).toBe(true);
     expect(getTokenAllowanceTool.annotations?.destructiveHint).toBe(false);
   });
+
+  it("does not expose a custom RPC URL option", () => {
+    const props = getTokenAllowanceTool.inputSchema.properties as Record<string, unknown>;
+    expect(props).not.toHaveProperty("rpcUrl");
+  });
 });
 
 // ── Handler ──────────────────────────────────────────────────────────────────
@@ -91,7 +96,7 @@ describe("get_token_allowance — handler", () => {
   });
 
   it("derives ownerAddress from the wallet when not provided", async () => {
-    const { getEthereumAddress } = jest.requireMock("../utils/evm.js");
+    const { getEthereumAddress } = jest.requireMock("../utils/evm");
     const ctx = makeContext();
 
     const result = (await getTokenAllowanceTool.handler(
@@ -104,7 +109,8 @@ describe("get_token_allowance — handler", () => {
   });
 
   it("passes the correct arguments to fetchERC20Allowance", async () => {
-    const { fetchERC20Allowance } = jest.requireMock("../utils/allowance.js");
+    const { fetchERC20Allowance } = jest.requireMock("../utils/allowance");
+    const { resolveEvmRpcUrl } = jest.requireMock("../utils/rpc");
     const ctx = makeContext();
 
     await getTokenAllowanceTool.handler(
@@ -112,6 +118,7 @@ describe("get_token_allowance — handler", () => {
       ctx as any,
     );
 
+    expect(resolveEvmRpcUrl).toHaveBeenCalledWith("eip155:8453");
     expect(fetchERC20Allowance).toHaveBeenCalledWith("https://rpc.example.com", TOKEN, OWNER, SPENDER);
   });
 
@@ -185,7 +192,7 @@ describe("get_token_allowance — handler", () => {
   });
 
   it("returns allowance of 0 correctly", async () => {
-    const { fetchERC20Allowance } = jest.requireMock("../utils/allowance.js");
+    const { fetchERC20Allowance } = jest.requireMock("../utils/allowance");
     fetchERC20Allowance.mockResolvedValueOnce(0n);
 
     const ctx = makeContext();

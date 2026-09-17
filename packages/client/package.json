@@ -1,6 +1,6 @@
 {
   "name": "@phantom/client",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "HTTP client for Phantom Wallet API",
   "repository": {
     "type": "git",
@@ -48,9 +48,10 @@
     "@phantom/openapi-wallet-service": "0.1.11",
     "@phantom/sdk-types": "workspace:^",
     "@phantom/utils": "workspace:^",
-    "axios": "1.15.1",
+    "axios": "1.15.2",
     "bs58": "^6.0.0",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "ethers": "^6.17.0"
   },
   "files": [
     "dist"

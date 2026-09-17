@@ -1,6 +1,6 @@
 {
   "name": "@phantom/perps-client",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Hyperliquid perpetuals client for Phantom Wallet",
   "repository": {
     "type": "git",
@@ -41,8 +41,9 @@
     "@phantom/client": "workspace:^",
     "@phantom/parsers": "workspace:^",
     "@phantom/phantom-api-client": "workspace:^",
-    "axios": "1.15.1",
-    "js-sha3": "^0.9.3"
+    "axios": "1.15.2",
+    "js-sha3": "^0.9.3",
+    "zod": "^4.3.6"
   },
   "files": [
     "dist"

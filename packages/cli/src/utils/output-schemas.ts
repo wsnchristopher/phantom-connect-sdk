@@ -5,19 +5,8 @@
  * that appear in multiple actions.
  */
 
-import type { ActionResponse, WithdrawFromSpotResult } from "@phantom/perps-client";
 import { z } from "incur";
-
-import { ScannedResultSchema } from "./simulation.js";
-
-/**
- * Generic response from Hyperliquid write operations (open/close/cancel/leverage/transfer).
- */
-export const ActionResponseSchema = z.object({
-  status: z.string(),
-  data: z.unknown().optional(),
-});
-assertType<z.infer<typeof ActionResponseSchema>, ActionResponse>();
+import { ScannedResultSchema } from "./simulation";
 
 /**
  * The "preview" leg of two-step transaction flows — returned when `confirmed` is
@@ -27,21 +16,6 @@ export const PendingConfirmationSchema = z.object({
   status: z.literal("pending_confirmation"),
   simulation: ScannedResultSchema.nullable(),
 });
-
-/**
- * Result of a successful Relay V2 bridge withdrawal from Hyperliquid spot or perps.
- */
-export const WithdrawFromSpotResultSchema = z.object({
-  requestId: z.string(),
-  details: z.object({
-    amountIn: z.string(),
-    amountOut: z.string(),
-    amountOutUsd: z.string().optional(),
-  }),
-  checkEndpoint: z.string(),
-  execution: z.unknown(),
-});
-assertType<z.infer<typeof WithdrawFromSpotResultSchema>, WithdrawFromSpotResult>();
 
 /**
  * Single signature returned by all message-signing actions.
@@ -67,7 +41,3 @@ export const BuyTokenOutputSchema = z.object({
     })
     .optional(),
 });
-
-type AssertEqual<T, Expected> = [T] extends [Expected] ? ([Expected] extends [T] ? true : false) : false;
-
-function assertType<T, Expected>(..._: AssertEqual<T, Expected> extends true ? [] : ["invalid type"]) {}

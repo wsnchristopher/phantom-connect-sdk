@@ -12,19 +12,19 @@ import { Cli, z } from "incur";
 import { isEthereumChain } from "@phantom/utils";
 import { parseToKmsTransaction } from "@phantom/parsers";
 import { chainIdToNetworkId } from "@phantom/constants";
-import { createAction } from "../utils/actions.js";
-import { getEthereumAddress, estimateGas, fetchGasPrice, fetchNonce } from "../utils/evm.js";
-import { resolveEvmRpcUrl } from "../utils/rpc.js";
-import { parseChainId } from "../utils/params.js";
-import { runSimulation } from "../utils/simulation.js";
+import { createAction } from "../utils/actions";
+import { getEthereumAddress, estimateGas, fetchGasPrice, fetchNonce } from "../utils/evm";
+import { resolveEvmRpcUrl } from "../utils/rpc";
+import { parseChainId } from "../utils/params";
+import { runSimulation } from "../utils/simulation";
 import {
   WalletIdSchema,
   DerivationIndexSchema,
   EvmChainIdSchema,
   EthereumAddressSchema,
   HexStringSchema,
-} from "../utils/schemas.js";
-import { PendingConfirmationSchema } from "../utils/output-schemas.js";
+} from "../utils/schemas";
+import { PendingConfirmationSchema } from "../utils/output-schemas";
 
 const SendEvmTransactionSchema = z.object({
   chainId: EvmChainIdSchema.describe(
@@ -60,7 +60,6 @@ const SendEvmTransactionSchema = z.object({
   ),
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index for the account (default: 0)"),
-  rpcUrl: z.string().optional().describe("Optional EVM RPC URL override. Defaults are provided for common networks."),
   confirmed: z
     .union([z.boolean(), z.stringbool()])
     .default(false)
@@ -113,7 +112,7 @@ const sendEvmTransactionAction = createAction({
 
     const walletId = params.walletId ?? session.walletId;
 
-    const rpcUrl = resolveEvmRpcUrl(networkId, params.rpcUrl);
+    const rpcUrl = resolveEvmRpcUrl(networkId);
 
     // Resolve the sender address from the wallet
     const from = await getEthereumAddress(context, walletId, params.derivationIndex);

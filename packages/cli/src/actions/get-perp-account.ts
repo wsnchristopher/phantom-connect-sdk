@@ -4,27 +4,22 @@
  * Returns the perpetuals account balance for the authenticated wallet.
  */
 
+import { PerpAccountBalanceSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas";
 
 const GetPerpAccountSchema = z.object({
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index (default: 0)"),
 });
 
-const PerpAccountSchema = z.object({
-  accountValue: z.string(),
-  availableBalance: z.string(),
-  availableToTrade: z.string(),
-});
-
 const getPerpAccountAction = createAction({
   description:
     "Returns the perpetuals account balance including total account value, available balance, and withdrawable amount. The account is on Hyperliquid (funded with USDC).",
   options: GetPerpAccountSchema,
-  output: PerpAccountSchema,
+  output: PerpAccountBalanceSchema,
   mcp: {
     command: "get_perp_account",
     annotations: {

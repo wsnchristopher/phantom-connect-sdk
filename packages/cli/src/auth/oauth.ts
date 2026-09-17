@@ -6,10 +6,10 @@
 import * as crypto from "crypto";
 import { execFile } from "child_process";
 import axios, { type AxiosError } from "axios";
-import { Logger } from "../utils/logger.js";
-import { DCRClient } from "./dcr.js";
-import { CallbackServer } from "./callback-server.js";
-import type { OAuthTokens, DCRClientConfig } from "../session/types.js";
+import { Logger } from "../utils/logger";
+import { DCRClient } from "./dcr";
+import { CallbackServer } from "./callback-server";
+import type { OAuthTokens, DCRClientConfig } from "../session/types";
 
 /**
  * Stamper keypair for API request signing

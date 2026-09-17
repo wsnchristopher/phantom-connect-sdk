@@ -1,5 +1,11 @@
 import { base64urlEncode, stringToBase64url } from "@phantom/base64url";
-import { AddressType, PhantomClient, SpendingLimitError, isAuthenticationError } from "@phantom/client";
+import {
+  AddressType,
+  PhantomClient,
+  SpendingLimitError,
+  isAuthenticationError,
+  normalizeEvmTransactionForNetwork,
+} from "@phantom/client";
 import type { NetworkId } from "@phantom/constants";
 import {
   parseSignMessageResponse,
@@ -8,7 +14,7 @@ import {
   type ParsedSignatureResult,
   type ParsedTransactionResult,
 } from "@phantom/parsers";
-import { randomUUID } from "@phantom/utils";
+import { isEthereumChain, randomUUID } from "@phantom/utils";
 import { Buffer } from "buffer";
 import bs58 from "bs58";
 import { AUTHENTICATOR_EXPIRATION_TIME_MS, EMBEDDED_PROVIDER_AUTH_TYPES } from "./constants";
@@ -776,13 +782,12 @@ export class EmbeddedProvider {
     const session = await this.storage.getSession();
     const derivationIndex = session?.accountDerivationIndex ?? 0;
 
-    // Get raw response from client - use the appropriate method based on chain
     const rawResponse = await this.client
       .signUtf8Message({
         walletId: this.walletId,
         message: params.message,
         networkId: params.networkId,
-        derivationIndex: derivationIndex,
+        derivationIndex,
       })
       .catch(error => this.handleSigningError(error));
 
@@ -808,19 +813,12 @@ export class EmbeddedProvider {
       message: params.message,
     });
 
-    const looksLikeHex = (str: string) => /^0x[0-9a-fA-F]+$/.test(str);
-
-    const normalizedMessage = (() => {
-      if (looksLikeHex(params.message)) {
-        const hexPayload = params.message.slice(2);
-        const normalizedHex = hexPayload.length % 2 === 0 ? hexPayload : `0${hexPayload}`;
-        return Buffer.from(normalizedHex, "hex").toString("utf8");
-      }
-      return params.message;
-    })();
-
-    // Parse message to base64url format for client
-    const base64UrlMessage = stringToBase64url(normalizedMessage);
+    const looksLikeHex = /^0x[0-9a-fA-F]*$/.test(params.message);
+    const hexPayload = params.message.slice(2);
+    const normalizedHex = hexPayload.length % 2 === 0 ? hexPayload : `0${hexPayload}`;
+    const base64UrlMessage = looksLikeHex
+      ? base64urlEncode(Buffer.from(normalizedHex, "hex"))
+      : stringToBase64url(params.message);
 
     // Get session to access derivation index
     const session = await this.storage.getSession();
@@ -894,7 +892,10 @@ export class EmbeddedProvider {
     });
 
     // Parse transaction to KMS format (base64url for Solana, hex for EVM) based on network
-    const parsedTransaction = await parseToKmsTransaction(params.transaction, params.networkId);
+    const transaction = isEthereumChain(params.networkId)
+      ? normalizeEvmTransactionForNetwork(params.transaction, params.networkId)
+      : params.transaction;
+    const parsedTransaction = await parseToKmsTransaction(transaction, params.networkId);
 
     // Get session to access derivation index
     const session = await this.storage.getSession();
@@ -952,7 +953,10 @@ export class EmbeddedProvider {
     });
 
     // Parse transaction to KMS format (base64url for Solana, hex for EVM) based on network
-    const parsedTransaction = await parseToKmsTransaction(params.transaction, params.networkId);
+    const transaction = isEthereumChain(params.networkId)
+      ? normalizeEvmTransactionForNetwork(params.transaction, params.networkId)
+      : params.transaction;
+    const parsedTransaction = await parseToKmsTransaction(transaction, params.networkId);
 
     // Get session to access derivation index
     const session = await this.storage.getSession();

@@ -1,5 +1,14 @@
 # @phantom/auth2
 
+## 2.0.3
+
+### Patch Changes
+
+- 86997b0: Fix device-code session creation after consent, and include HTTP status, service error text, and request ID in provisioning failures.
+  - @phantom/base64url@2.0.3
+  - @phantom/sdk-types@2.0.3
+  - @phantom/crypto@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

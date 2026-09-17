@@ -12,10 +12,10 @@ import { Cli, z } from "incur";
 import { isEthereumChain } from "@phantom/utils";
 import { validateEip712TypedData } from "@phantom/parsers";
 import { chainIdToNetworkId } from "@phantom/constants";
-import { createAction } from "../utils/actions.js";
-import { parseChainId } from "../utils/params.js";
-import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema } from "../utils/schemas.js";
-import { SignatureOutputSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { parseChainId } from "../utils/params";
+import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema } from "../utils/schemas";
+import { SignatureOutputSchema } from "../utils/output-schemas";
 
 const SignEvmTypedDataSchema = z.object({
   typedData: z

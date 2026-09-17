@@ -2,7 +2,7 @@ import { transferSpotToPerpsTool } from "./transfer-spot-to-perps";
 
 const mockPerpsClient = { deposit: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -20,7 +20,7 @@ const makeContext = () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.deposit.mockResolvedValue({ status: "ok", data: {} });
 });

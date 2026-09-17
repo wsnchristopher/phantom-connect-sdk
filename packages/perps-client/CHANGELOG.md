@@ -1,5 +1,15 @@
 # @phantom/perps-client
 
+## 1.2.2
+
+### Patch Changes
+
+- fcf368b: validate perp responses
+- Updated dependencies [65140f4]
+- Updated dependencies [fce0979]
+  - @phantom/client@2.0.3
+  - @phantom/parsers@2.0.3
+
 ## 1.2.1
 
 ### Patch Changes

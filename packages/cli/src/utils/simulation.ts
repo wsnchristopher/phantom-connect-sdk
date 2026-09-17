@@ -3,8 +3,8 @@
  */
 import { z } from "incur";
 
-import type { ToolContext } from "../tools/types.js";
-import { normalizeSwapperChainId } from "./network.js";
+import type { ToolContext } from "../tools/types";
+import { normalizeSwapperChainId } from "./network";
 
 export const DEFAULT_SIMULATION_URL = "https://agents.phantom.app";
 

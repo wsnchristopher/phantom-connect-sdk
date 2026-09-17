@@ -4,35 +4,22 @@
  * Returns trade history for the authenticated wallet's perpetuals account.
  */
 
+import { HistoricalOrderSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas";
 
 const GetPerpTradeHistorySchema = z.object({
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index (default: 0)"),
 });
 
-const PerpTradeSchema = z.object({
-  id: z.string(),
-  coin: z.string(),
-  type: z.string(),
-  timestamp: z.number(),
-  price: z.string(),
-  size: z.string(),
-  tradeValue: z.string(),
-  fee: z.string(),
-  closedPnl: z.string().optional(),
-});
-
-const GetPerpTradeHistoryOutputSchema = z.array(PerpTradeSchema);
-
 const getPerpTradeHistoryAction = createAction({
   description:
     "Returns historical perpetual trades for the wallet. Each entry includes trade ID, coin, type (open/close/liquidation), timestamp, price, size, trade value, fee, and closed PnL.",
   options: GetPerpTradeHistorySchema,
-  output: GetPerpTradeHistoryOutputSchema,
+  output: z.array(HistoricalOrderSchema),
   mcp: {
     command: "get_perp_trade_history",
     annotations: {

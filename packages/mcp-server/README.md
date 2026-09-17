@@ -76,21 +76,21 @@ The server exposes the following MCP tools:
 
 See [PERPS.md](./PERPS.md) for full perpetuals documentation.
 
-| Tool                             | Description                                                                  |
-| -------------------------------- | ---------------------------------------------------------------------------- |
-| `perps_markets`                  | List available perpetual markets with prices and funding rates.              |
-| `perps_account`                  | Get your Hyperliquid perps account summary.                                  |
-| `perps_positions`                | Get open perpetual positions.                                                |
-| `perps_orders`                   | Get open perpetual orders.                                                   |
-| `perps_history`                  | Get perpetual trade history.                                                 |
-| `perps_open`                     | Open a perpetual position.                                                   |
-| `perps_close`                    | Close a perpetual position.                                                  |
-| `perps_cancel`                   | Cancel a perpetual order.                                                    |
-| `perps_leverage`                 | Update leverage for a market.                                                |
-| `perps_transfer`                 | Transfer funds between spot and perps accounts.                              |
-| `perps_deposit`                  | Bridge tokens into your Hyperliquid perps account.                           |
-| `perps_withdraw`                 | Bridge USDC from perps directly to an external chain.                        |
-| `withdraw_from_hyperliquid_spot` | Bridge USDC from Hyperliquid spot to an external chain via the Relay bridge. |
+| Tool                             | Description                                                                                                        |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `perps_markets`                  | List available perpetual markets with prices and funding rates. HIP-3 markets use `DEX:SYMBOL` format in `symbol`. |
+| `perps_account`                  | Get your Hyperliquid perps account summary. Includes per-DEX balances (`dexs`) for HIP-3 markets.                  |
+| `perps_positions`                | Get open perpetual positions.                                                                                      |
+| `perps_orders`                   | Get open perpetual orders.                                                                                         |
+| `perps_history`                  | Get perpetual trade history.                                                                                       |
+| `perps_open`                     | Open a perpetual position.                                                                                         |
+| `perps_close`                    | Close a perpetual position.                                                                                        |
+| `perps_cancel`                   | Cancel a perpetual order.                                                                                          |
+| `perps_leverage`                 | Update leverage for a market.                                                                                      |
+| `perps_transfer`                 | Transfer funds between spot and perps accounts.                                                                    |
+| `perps_deposit`                  | Bridge tokens into your Hyperliquid perps account.                                                                 |
+| `perps_withdraw`                 | Bridge USDC from perps directly to an external chain.                                                              |
+| `withdraw_from_hyperliquid_spot` | Bridge USDC from Hyperliquid spot to an external chain via the Relay bridge.                                       |
 
 ## Configuration
 

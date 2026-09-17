@@ -1,5 +1,5 @@
 /.github/workflows/*.yml @phantom/security
 
 # Security can use overrides to approve when needed rather than CO
-**/yarn.lock @phantom/wallet-platform
-**/package.json @phantom/wallet-platform
+**/yarn.lock @phantom/agentic-trading-parent
+**/package.json @phantom/agentic-trading-parent

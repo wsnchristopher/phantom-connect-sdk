@@ -4,36 +4,22 @@
  * Returns open perpetual orders for the authenticated wallet.
  */
 
+import { PerpOrderSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas";
 
 const GetPerpOrdersSchema = z.object({
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index (default: 0)"),
 });
 
-const PerpOrderSchema = z.object({
-  id: z.string(),
-  coin: z.string(),
-  side: z.enum(["long", "short"]),
-  type: z.enum(["limit", "take_profit_market", "stop_market"]),
-  isTrigger: z.boolean(),
-  limitPrice: z.string(),
-  triggerPrice: z.string().optional(),
-  size: z.string(),
-  reduceOnly: z.boolean(),
-  timestamp: z.number(),
-});
-
-const GetPerpOrdersOutputSchema = z.array(PerpOrderSchema);
-
 const getPerpOrdersAction = createAction({
   description:
     "Returns all open perpetual orders (limit orders, take-profit, stop-loss) for the wallet. Each order includes ID, coin, side, type, limit/trigger price, size, and whether it is reduce-only.",
   options: GetPerpOrdersSchema,
-  output: GetPerpOrdersOutputSchema,
+  output: z.array(PerpOrderSchema),
   mcp: {
     command: "get_perp_orders",
     annotations: {

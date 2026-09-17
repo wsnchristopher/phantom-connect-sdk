@@ -11,12 +11,13 @@ import {
   Auth2Token,
   decodeJwtClaims,
   _deriveNonce,
-  _getOrCreateAppWallet,
+  _getOrCreateAgentWallet,
   type Auth2StamperWithKeyManagement,
 } from "@phantom/auth2";
-import { Logger } from "../utils/logger.js";
-import { DCRClient } from "./dcr.js";
-import type { DCRClientConfig } from "../session/types.js";
+import { Logger } from "../utils/logger";
+import { DCRClient } from "./dcr";
+import type { DeviceCodeAuthDisplayOptions } from "./types";
+import type { DCRClientConfig } from "../session/types";
 
 type DeviceAuthorizationResponse = {
   device_code: string;
@@ -48,12 +49,6 @@ export type DeviceCodeAuthResult = {
   organizationId: string;
   authUserId: string;
   appId: string;
-};
-
-export type DeviceCodeAuthDisplayOptions = {
-  openBrowser?: boolean;
-  promptOnly?: boolean;
-  onPrompt?: (message: string) => void | Promise<void>;
 };
 
 const UUID_CLIENT_ID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -121,7 +116,7 @@ export class DeviceCodeAuthProvider {
     });
 
     const walletId = (
-      await _getOrCreateAppWallet({
+      await _getOrCreateAgentWallet({
         kms,
         organizationId,
         clientId: auth2Token.clientId,

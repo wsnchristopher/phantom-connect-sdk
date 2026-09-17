@@ -1,18 +1,18 @@
 import { Cli } from "incur";
-import { varsSchema } from "../vars.js";
-import { perpsMarketsCommand } from "../actions/get-perp-markets.js";
-import { perpsAccountCommand } from "../actions/get-perp-account.js";
-import { perpsPositionsCommand } from "../actions/get-perp-positions.js";
-import { perpsOrdersCommand } from "../actions/get-perp-orders.js";
-import { perpsHistoryCommand } from "../actions/get-perp-trade-history.js";
-import { perpsOpenCommand } from "../actions/open-perp-position.js";
-import { perpsCloseCommand } from "../actions/close-perp-position.js";
-import { perpsCancelCommand } from "../actions/cancel-perp-order.js";
-import { perpsLeverageCommand } from "../actions/update-perp-leverage.js";
-import { perpsTransferCommand } from "../actions/transfer-spot-to-perps.js";
-import { perpsDepositCommand } from "../actions/deposit-to-hyperliquid.js";
-import { perpsWithdrawCommand } from "../actions/withdraw-from-perps.js";
-import { perpsWithdrawHlSpotCommand } from "../actions/withdraw-from-hyperliquid-spot.js";
+import { varsSchema } from "../vars";
+import { perpsMarketsCommand } from "../actions/get-perp-markets";
+import { perpsAccountCommand } from "../actions/get-perp-account";
+import { perpsPositionsCommand } from "../actions/get-perp-positions";
+import { perpsOrdersCommand } from "../actions/get-perp-orders";
+import { perpsHistoryCommand } from "../actions/get-perp-trade-history";
+import { perpsOpenCommand } from "../actions/open-perp-position";
+import { perpsCloseCommand } from "../actions/close-perp-position";
+import { perpsCancelCommand } from "../actions/cancel-perp-order";
+import { perpsLeverageCommand } from "../actions/update-perp-leverage";
+import { perpsTransferCommand } from "../actions/transfer-spot-to-perps";
+import { perpsDepositCommand } from "../actions/deposit-to-hyperliquid";
+import { perpsWithdrawCommand } from "../actions/withdraw-from-perps";
+import { perpsWithdrawHlSpotCommand } from "../actions/withdraw-from-hyperliquid-spot";
 
 export const perpsCli = Cli.create("perps", {
   description: "Hyperliquid perpetuals",

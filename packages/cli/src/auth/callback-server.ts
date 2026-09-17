@@ -5,8 +5,8 @@
 
 import * as http from "http";
 import { URL } from "url";
-import { Logger } from "../utils/logger.js";
-import type { OAuthCallbackParams } from "../session/types.js";
+import { Logger } from "../utils/logger";
+import type { OAuthCallbackParams } from "../session/types";
 
 /**
  * CallbackServer options

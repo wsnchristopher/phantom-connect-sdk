@@ -10,7 +10,7 @@ jest.mock("@phantom/perps-client", () => ({
   }),
 }));
 
-jest.mock("./evm.js", () => ({
+jest.mock("./evm", () => ({
   getEthereumAddress: (...args: unknown[]) => mockGetEthereumAddress(...args),
 }));
 

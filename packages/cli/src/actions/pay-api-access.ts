@@ -9,9 +9,9 @@ import { AddressType, NetworkId } from "@phantom/client";
 import { base64urlEncode } from "@phantom/base64url";
 import { Transaction } from "@solana/web3.js";
 
-import { createAction } from "../utils/actions.js";
-import { WalletIdSchema, DerivationIndexSchema, Base64Schema } from "../utils/schemas.js";
-import { runSimulation } from "../utils/simulation.js";
+import { createAction } from "../utils/actions";
+import { WalletIdSchema, DerivationIndexSchema, Base64Schema } from "../utils/schemas";
+import { runSimulation } from "../utils/simulation";
 
 const COMPUTE_BUDGET_PROGRAM = "ComputeBudget111111111111111111111111111111";
 const SPL_TOKEN_PROGRAM = "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA";

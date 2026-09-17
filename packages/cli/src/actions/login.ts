@@ -10,7 +10,7 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
+import { createAction } from "../utils/actions";
 
 const LoginSchema = z.object({
   displayMode: z

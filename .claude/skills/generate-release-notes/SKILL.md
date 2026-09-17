@@ -4,7 +4,7 @@ Generate a high-level release note summarising what changed between a git tag an
 
 **Arguments:** `<tag> [package]` — a git tag to diff against (e.g. `v1.2.0`, `@phantom/react-sdk@2.1.0`), and an optional package name to scope the diff (e.g. `@phantom/react-sdk`). If no package is provided, all packages are included.
 
-> **Note:** Release tags live on the **public mirror** at `https://github.com/phantom/phantom-connect-sdk`. The diff is always performed against the **current (internal) repo**.
+> **Note:** Release tags live on `https://github.com/phantom/phantom-connect-sdk`. The diff is always performed against the current checkout.
 
 ---
 
@@ -23,22 +23,22 @@ If `{package}` is **not** provided, run commands without a path filter to captur
 
 ## Phase 1 — Resolve the tag commit from the public repo
 
-The internal repo does not have release tags. Fetch the commit SHA that the tag points to from the public mirror:
+This checkout may not have release tags. Fetch the commit SHA that the tag points to from the release repository:
 
 ```bash
-# Get the commit SHA the tag resolves to on the public repo
+# Get the commit SHA the tag resolves to in the release repository
 git ls-remote https://github.com/phantom/phantom-connect-sdk.git "refs/tags/{tag}" "refs/tags/{tag}^{}"
 ```
 
 Take the **last** SHA returned (the dereferenced `^{}` entry if present, otherwise the only entry). Call this `{public-sha}`.
 
-Then verify this commit exists in the internal repo:
+Then verify this commit exists in the current checkout:
 
 ```bash
 git -C <repo-root> cat-file -t {public-sha}
 ```
 
-If the commit is not found, the internal and public repos may have diverged in history. Stop and report this to the user.
+If the commit is not found, the local checkout and release repository may have diverged in history. Stop and report this to the user.
 
 ---
 

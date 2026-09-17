@@ -5,9 +5,9 @@
  * by wrapping the Phantom MCP Server tools.
  */
 
-import type { OpenClawApi } from "./client/types.js";
-import { PluginSession } from "./session.js";
-import { registerPhantomTools } from "./tools/register-tools.js";
+import type { OpenClawApi } from "./client/types";
+import { PluginSession } from "./session";
+import { registerPhantomTools } from "./tools/register-tools";
 import { PluginConfigSchema } from "@phantom/cli";
 
 // Singleton session instance

@@ -2,7 +2,7 @@ import { depositToHyperliquidTool } from "./deposit-to-hyperliquid";
 import { buyTokenTool } from "./buy-token";
 
 // deposit_to_hyperliquid is a thin wrapper — we verify it delegates to buy_token correctly
-jest.mock("./buy-token.js", () => ({
+jest.mock("./buy-token", () => ({
   buyTokenTool: {
     name: "buy_token",
     description: "",

@@ -8,12 +8,12 @@
 import { Cli, z } from "incur";
 import { isEthereumChain } from "@phantom/utils";
 import { chainIdToNetworkId } from "@phantom/constants";
-import { createAction } from "../utils/actions.js";
-import { getEthereumAddress } from "../utils/evm.js";
-import { fetchERC20Allowance } from "../utils/allowance.js";
-import { resolveEvmRpcUrl } from "../utils/rpc.js";
-import { parseChainId } from "../utils/params.js";
-import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema, EthereumAddressSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { getEthereumAddress } from "../utils/evm";
+import { fetchERC20Allowance } from "../utils/allowance";
+import { resolveEvmRpcUrl } from "../utils/rpc";
+import { parseChainId } from "../utils/params";
+import { WalletIdSchema, DerivationIndexSchema, EvmChainIdSchema, EthereumAddressSchema } from "../utils/schemas";
 
 const GetTokenAllowanceSchema = z.object({
   chainId: EvmChainIdSchema.describe(
@@ -27,7 +27,6 @@ const GetTokenAllowanceSchema = z.object({
   derivationIndex: DerivationIndexSchema.describe(
     "Optional derivation index for the wallet address (default: 0). Only used when ownerAddress is omitted.",
   ),
-  rpcUrl: z.string().optional().describe("Optional EVM RPC URL override."),
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
 });
 
@@ -71,7 +70,7 @@ const getTokenAllowanceAction = createAction({
     // EthereumAddressSchema already validates and checksums these at parse time
     const tokenAddress = params.tokenAddress;
     const spenderAddress = params.spenderAddress;
-    const rpcUrl = resolveEvmRpcUrl(networkId, params.rpcUrl);
+    const rpcUrl = resolveEvmRpcUrl(networkId);
 
     // Resolve owner: explicit address or derive from wallet
     let ownerAddress: string;

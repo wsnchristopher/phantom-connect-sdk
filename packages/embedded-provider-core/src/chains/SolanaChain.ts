@@ -36,9 +36,18 @@ export class EmbeddedSolanaChain implements ISolanaChain {
   // Standard wallet adapter methods
   async signMessage(message: string | Uint8Array): Promise<{ signature: Uint8Array; publicKey: string }> {
     this.ensureConnected();
-    const messageStr = typeof message === "string" ? message : new TextDecoder().decode(message);
+    let messageText: string;
+    if (typeof message === "string") {
+      messageText = message;
+    } else {
+      try {
+        messageText = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(message);
+      } catch {
+        throw new Error("Solana message bytes must be valid UTF-8");
+      }
+    }
     const result = await this.provider.signMessage({
-      message: messageStr,
+      message: messageText,
       networkId: this.currentNetworkId,
     });
 

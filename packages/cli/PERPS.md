@@ -8,7 +8,7 @@ When running in MCP server mode (`phantom --mcp`), all commands are exposed as M
 
 ### `phantom perps markets` — MCP: `perps_markets`
 
-List all available perpetual markets on Hyperliquid with current prices, funding rates, open interest, 24h volume, max leverage, and asset IDs. Use this to discover tradeable markets and get current prices before opening positions.
+List all available perpetual markets on Hyperliquid with current prices, funding rates, open interest, 24h volume, max leverage, and optional `assetId`. Use this to discover tradeable markets and get current prices before opening positions. HIP-3 builder-deployed markets encode the DEX in the `symbol` field using `DEX:SYMBOL` format (e.g. `WOOF:BTC`).
 
 **Options:** none required
 
@@ -16,7 +16,7 @@ List all available perpetual markets on Hyperliquid with current prices, funding
 
 ### `phantom perps account` — MCP: `perps_account`
 
-Get your perpetuals account balance including total account value, available balance, and withdrawable amount. The account is funded with USDC on Hyperliquid.
+Get your perpetuals account balance including total account value, available balance, and withdrawable amount. The account is funded with USDC on Hyperliquid. If you trade on HIP-3 builder-deployed DEXs, per-DEX balances are returned in the `dexs` map alongside the main account totals.
 
 **Options:**
 
@@ -64,7 +64,7 @@ Open a perpetual position on Hyperliquid. Supports market and limit orders in lo
 
 **Options:**
 
-- `--market` — market symbol, e.g. `BTC`, `ETH`, `SOL`
+- `--market` — market symbol, e.g. `BTC`, `ETH`, `SOL`. For HIP-3 builder-deployed markets use `DEX:SYMBOL` format, e.g. `WOOF:BTC`
 - `--direction` — `long` or `short`
 - `--sizeUsd` — position size in USD (e.g. `100` for $100 notional)
 - `--leverage` — leverage multiplier (e.g. `1` for 1x, `10` for 10x)

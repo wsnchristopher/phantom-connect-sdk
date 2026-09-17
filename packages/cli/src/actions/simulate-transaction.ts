@@ -5,11 +5,11 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { getEthereumAddress } from "../utils/evm.js";
-import { runSimulation, ScannedResultSchema } from "../utils/simulation.js";
-import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { getSolanaAddress } from "../utils/solana";
+import { getEthereumAddress } from "../utils/evm";
+import { runSimulation, ScannedResultSchema } from "../utils/simulation";
+import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema } from "../utils/schemas";
 
 const SimulateTransactionSchema = z.object({
   chainId: Caip2ChainIdSchema.describe(

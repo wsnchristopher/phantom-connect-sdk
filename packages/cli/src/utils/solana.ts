@@ -3,7 +3,7 @@
  */
 
 import { AddressType } from "@phantom/client";
-import type { ToolContext } from "../tools/types.js";
+import type { ToolContext } from "../tools/types";
 
 /**
  * Retrieves the Solana address for a given wallet

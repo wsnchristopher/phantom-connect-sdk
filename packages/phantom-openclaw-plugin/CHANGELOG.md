@@ -1,5 +1,18 @@
 # @phantom/openclaw-plugin
 
+## 1.2.8
+
+### Patch Changes
+
+- fcf368b: validate perp responses
+- Updated dependencies [86997b0]
+- Updated dependencies [65140f4]
+- Updated dependencies [fcf368b]
+- Updated dependencies [fce0979]
+- Updated dependencies [b9e1497]
+  - @phantom/cli@2.0.0
+  - @phantom/client@2.0.3
+
 ## 1.2.6
 
 ### Patch Changes

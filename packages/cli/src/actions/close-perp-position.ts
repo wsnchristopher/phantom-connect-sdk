@@ -4,18 +4,20 @@
  * Closes an existing perpetual position on Hyperliquid.
  */
 
+import { ActionResponseSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema, PercentageSchema } from "../utils/schemas.js";
-import { ActionResponseSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema, PercentageSchema } from "../utils/schemas";
 
 const ClosePerpPositionSchema = z.object({
   market: z
     .string()
     .trim()
     .min(1, { message: "market is required" })
-    .describe('Market symbol of the position to close (e.g. "BTC")'),
+    .describe(
+      'Market symbol of the position to close (e.g. "BTC"). For HIP-3 builder-deployed markets use "DEX:SYMBOL" format (e.g. "WOOF:BTC").',
+    ),
   sizePercent: PercentageSchema.min(1)
     .default(100)
     .describe("Percentage of position to close (1–100, default: 100 for full close)"),

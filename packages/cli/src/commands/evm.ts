@@ -1,9 +1,9 @@
 import { Cli } from "incur";
-import { varsSchema } from "../vars.js";
-import { sendEvmCommand } from "../actions/send-evm-transaction.js";
-import { signEvmCommand } from "../actions/sign-evm-personal-message.js";
-import { signEvmTypedCommand } from "../actions/sign-evm-typed-data.js";
-import { allowanceEvmCommand } from "../actions/get-token-allowance.js";
+import { varsSchema } from "../vars";
+import { sendEvmCommand } from "../actions/send-evm-transaction";
+import { signEvmCommand } from "../actions/sign-evm-personal-message";
+import { signEvmTypedCommand } from "../actions/sign-evm-typed-data";
+import { allowanceEvmCommand } from "../actions/get-token-allowance";
 
 export const evmCli = Cli.create("evm", {
   description: "EVM operations",

@@ -7,15 +7,15 @@ import { Cli, z } from "incur";
 import { isSolanaChain } from "@phantom/utils";
 import { Connection, PublicKey } from "@solana/web3.js";
 import { getMint } from "@solana/spl-token";
-import { createAction } from "../utils/actions.js";
-import { normalizeSwapperChainId } from "../utils/network.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { getEthereumAddress } from "../utils/evm.js";
-import { parseBaseUnitAmount, parseUiAmount, requirePositiveAmount } from "../utils/amount.js";
-import { validateTokenAddress, buildTokenObject, fetchSwapQuote, executeSwap } from "../utils/swap.js";
-import { resolveSolanaRpcUrl } from "../utils/rpc.js";
-import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema, PercentageSchema } from "../utils/schemas.js";
-import { BuyTokenOutputSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { normalizeSwapperChainId } from "../utils/network";
+import { getSolanaAddress } from "../utils/solana";
+import { getEthereumAddress } from "../utils/evm";
+import { parseBaseUnitAmount, parseUiAmount, requirePositiveAmount } from "../utils/amount";
+import { validateTokenAddress, buildTokenObject, fetchSwapQuote, executeSwap } from "../utils/swap";
+import { resolveSolanaRpcUrl } from "../utils/rpc";
+import { WalletIdSchema, DerivationIndexSchema, Caip2ChainIdSchema, PercentageSchema } from "../utils/schemas";
+import { BuyTokenOutputSchema } from "../utils/output-schemas";
 
 const BuyTokenSchema = z.object({
   sellChainId: Caip2ChainIdSchema.optional()
@@ -102,10 +102,6 @@ const BuyTokenSchema = z.object({
         "For cross-chain swaps this sends the sell-side transaction; the bridge completes the rest automatically.",
     ),
   taker: z.string().optional().describe("Override taker address (defaults to the wallet address for the sell chain)"),
-  rpcUrl: z
-    .string()
-    .optional()
-    .describe("Optional Solana RPC URL (for mint decimals lookup when amountUnit is 'ui' on Solana)"),
   derivationIndex: DerivationIndexSchema.describe("Optional derivation index for the taker address (default: 0)"),
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
 });
@@ -217,7 +213,7 @@ const buyTokenAction = createAction({
           decimals = params.buyTokenDecimals;
         } else if (isBuySolana && buyTokenMint) {
           // Auto-fetch from Solana chain
-          const rpcUrl = resolveSolanaRpcUrl(buySwapperChainId, params.rpcUrl);
+          const rpcUrl = resolveSolanaRpcUrl(buySwapperChainId);
           const connection = new Connection(rpcUrl, "confirmed");
           const mintInfo = await getMint(connection, new PublicKey(buyTokenMint), "confirmed");
           decimals = mintInfo.decimals;
@@ -233,7 +229,7 @@ const buyTokenAction = createAction({
         } else if (params.sellTokenDecimals !== undefined) {
           decimals = params.sellTokenDecimals;
         } else if (isSellSolana && sellTokenMint) {
-          const rpcUrl = resolveSolanaRpcUrl(sellSwapperChainId, params.rpcUrl);
+          const rpcUrl = resolveSolanaRpcUrl(sellSwapperChainId);
           const connection = new Connection(rpcUrl, "confirmed");
           const mintInfo = await getMint(connection, new PublicKey(sellTokenMint), "confirmed");
           decimals = mintInfo.decimals;

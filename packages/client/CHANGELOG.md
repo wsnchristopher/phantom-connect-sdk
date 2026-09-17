@@ -1,5 +1,19 @@
 # @phantom/client
 
+## 2.0.3
+
+### Patch Changes
+
+- 65140f4: Reject malformed Solana UTF-8 message bytes instead of silently rewriting them, preserve every accepted UTF-8 byte, and encode EVM personal-sign hex data exactly once.
+- fce0979: Bind EVM transactions to their selected network before signing.
+- Updated dependencies [fce0979]
+  - @phantom/constants@2.0.3
+  - @phantom/base64url@2.0.3
+  - @phantom/sdk-types@2.0.3
+  - @phantom/crypto@2.0.3
+  - @phantom/api-key-stamper@2.0.3
+  - @phantom/utils@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

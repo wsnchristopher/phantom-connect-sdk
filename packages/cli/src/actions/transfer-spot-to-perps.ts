@@ -10,11 +10,11 @@
  * via the Phantom /swap/v2/spot/funding endpoint — that is not handled here.
  */
 
+import { ActionResponseSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema, PositiveNumericStringSchema } from "../utils/schemas.js";
-import { ActionResponseSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema, PositiveNumericStringSchema } from "../utils/schemas";
 
 const TransferSpotToPerpsSchema = z.object({
   amountUsdc: PositiveNumericStringSchema.describe(

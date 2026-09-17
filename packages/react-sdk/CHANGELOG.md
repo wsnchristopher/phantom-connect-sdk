@@ -1,5 +1,15 @@
 # @phantom/react-sdk
 
+## 2.0.3
+
+### Patch Changes
+
+- Updated dependencies [fce0979]
+  - @phantom/constants@2.0.3
+  - @phantom/chain-interfaces@2.0.3
+  - @phantom/browser-sdk@2.0.3
+  - @phantom/wallet-sdk-ui@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

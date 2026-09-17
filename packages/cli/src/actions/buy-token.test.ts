@@ -142,6 +142,11 @@ describe("buy_token — schema", () => {
     expect(props).toHaveProperty("sellChainId");
     expect(props).toHaveProperty("buyChainId");
   });
+
+  it("does not expose a custom RPC URL option", () => {
+    const props = buyTokenTool.inputSchema.properties as Record<string, unknown>;
+    expect(props).not.toHaveProperty("rpcUrl");
+  });
 });
 
 describe("buy_token — Solana (backward compat)", () => {

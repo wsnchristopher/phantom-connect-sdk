@@ -1,5 +1,15 @@
 # @phantom/api-key-stamper
 
+## 2.0.3
+
+### Patch Changes
+
+- Updated dependencies [fce0979]
+  - @phantom/constants@2.0.3
+  - @phantom/base64url@2.0.3
+  - @phantom/sdk-types@2.0.3
+  - @phantom/crypto@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

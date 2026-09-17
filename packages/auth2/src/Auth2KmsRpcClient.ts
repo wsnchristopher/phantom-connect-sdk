@@ -2,12 +2,16 @@ import {
   Configuration,
   KMSRPCApi,
   GetOrCreatePhantomOrganizationMethodEnum,
+  CreateWalletMethodEnum,
+  GetWalletWithTagMethodEnum,
   GetOrCreateWalletWithTagMethodEnum,
   type KmsRpcRequest,
   type KmsRpcResponseV2,
+  type ExternalKmsWallet,
   type ExternalKmsOrganization,
   type KmsWalletWithDerivedAccounts,
   type DerivationInfoSchema,
+  type ErrorResponse,
 } from "@phantom/openapi-wallet-service";
 import axios from "axios";
 import { Buffer } from "buffer";
@@ -18,6 +22,19 @@ const DEFAULT_KMS_API_VERSION = "2025-11-24";
 export type Auth2KmsClientOptions = {
   apiBaseUrl: string;
   appId: string;
+};
+
+export type Auth2KmsGetWalletWithTagArgs = {
+  organizationId: string;
+  tag: string;
+};
+
+export type Auth2KmsCreateWalletArgs = {
+  walletName: string;
+  organizationId: string;
+  tags: Array<string>;
+  accounts: Array<DerivationInfoSchema>;
+  mnemonicLength: number;
 };
 
 /**
@@ -63,7 +80,9 @@ export class Auth2KmsRpcClient {
   }
 
   private async postKmsRpc<T>(request: KmsRpcRequest): Promise<T> {
-    const response = await this.kmsApi.postKmsRpc(request);
+    const response = await this.kmsApi.postKmsRpc(request).catch((error: unknown) => {
+      throw formatKmsHttpError(error);
+    });
 
     // Surface JSON-RPC level errors (KMS returns HTTP 200 with error body).
     const rpcBody: KmsRpcResponseV2 = response.data;
@@ -102,6 +121,24 @@ export class Auth2KmsRpcClient {
     } as unknown as KmsRpcRequest);
   }
 
+  public async getWalletWithTag(args: Auth2KmsGetWalletWithTagArgs): Promise<ExternalKmsWallet | null> {
+    const wallet = await this.postKmsRpc<ExternalKmsWallet | null>({
+      method: GetWalletWithTagMethodEnum.getWalletWithTag,
+      params: args,
+      timestampMs: Date.now(),
+    } as unknown as KmsRpcRequest);
+
+    return wallet ?? null;
+  }
+
+  public async createWallet(args: Auth2KmsCreateWalletArgs): Promise<ExternalKmsWallet> {
+    return await this.postKmsRpc<ExternalKmsWallet>({
+      method: CreateWalletMethodEnum.createWallet,
+      params: args,
+      timestampMs: Date.now(),
+    } as unknown as KmsRpcRequest);
+  }
+
   public async getOrCreateWalletWithTag(args: {
     organizationId: string;
     walletName: string;
@@ -115,4 +152,54 @@ export class Auth2KmsRpcClient {
       timestampMs: Date.now(),
     } as KmsRpcRequest);
   }
+}
+
+type KmsHttpResponse = {
+  status: number;
+  data: unknown;
+};
+
+function getHttpResponse(error: unknown): KmsHttpResponse | null {
+  if (typeof error !== "object" || error === null || !("response" in error)) {
+    return null;
+  }
+
+  const response = (error as { response?: { status?: unknown; data?: unknown } }).response;
+  if (!response || typeof response.status !== "number") {
+    return null;
+  }
+
+  return { status: response.status, data: response.data };
+}
+
+/**
+ * MCP returns only `error.message`. Keep ErrorResponse fields and drop request
+ * headers, tokens, stamps, and the Axios config.
+ */
+function formatKmsHttpError(error: unknown): unknown {
+  const response = getHttpResponse(error);
+  if (!response) {
+    return error;
+  }
+
+  let detail: string | undefined;
+  let requestId: string | undefined;
+  if (response.data && typeof response.data === "object") {
+    const body = response.data as Partial<ErrorResponse>;
+    if (typeof body.error === "string" && body.error.length > 0) {
+      detail = body.error;
+    }
+    if (typeof body.requestId === "string" && body.requestId.length > 0) {
+      requestId = body.requestId;
+    }
+  }
+
+  let message = `KMS HTTP ${response.status}`;
+  if (detail) {
+    message += `: ${detail}`;
+  }
+  if (requestId) {
+    message += ` (requestId=${requestId})`;
+  }
+  return new Error(message);
 }

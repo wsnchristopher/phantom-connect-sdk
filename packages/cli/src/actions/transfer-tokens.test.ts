@@ -6,14 +6,24 @@ jest.mock("@phantom/parsers", () => ({
   parseToKmsTransaction: jest.fn().mockResolvedValue({ parsed: "0xrlpencoded", originalFormat: "json" }),
 }));
 
-jest.mock("../utils/evm.js", () => ({
+jest.mock("../utils/evm", () => ({
   getEthereumAddress: jest.fn().mockResolvedValue("0xabcdef1234567890abcdef1234567890abcdef12"),
-  resolveEvmRpcUrl: jest.fn().mockReturnValue("https://rpc.example.com"),
   estimateGas: jest.fn().mockResolvedValue("0x5208"),
   fetchGasPrice: jest.fn().mockResolvedValue("0x4A817C800"),
   fetchNonce: jest.fn().mockResolvedValue("0x7"),
   assertEvmAddress: jest.fn(),
 }));
+
+jest.mock("../utils/rpc", () => {
+  const actual = jest.requireActual("../utils/rpc");
+  return {
+    ...actual,
+    resolveEvmRpcUrl: jest.fn(
+      (networkId: string) => actual.DEFAULT_EVM_RPC_URLS[networkId] ?? "https://default-evm-rpc.example.com",
+    ),
+    resolveSolanaRpcUrl: jest.fn().mockReturnValue("https://default-solana-rpc.example.com"),
+  };
+});
 
 jest.mock("@solana/web3.js", () => ({
   Connection: jest.fn().mockImplementation(() => ({
@@ -117,6 +127,11 @@ describe("transfer_tokens — schema", () => {
     const desc = (transferTokensTool.inputSchema.properties as any).networkId.description;
     expect(desc).toContain("eip155:1");
     expect(desc).toContain("eip155:8453");
+  });
+
+  it("does not expose a custom RPC URL option", () => {
+    const props = transferTokensTool.inputSchema.properties as Record<string, unknown>;
+    expect(props).not.toHaveProperty("rpcUrl");
   });
 });
 
@@ -228,7 +243,7 @@ describe("transfer_tokens — EVM native", () => {
 
   it("fetches and includes nonce in the transaction", async () => {
     const { parseToKmsTransaction } = jest.requireMock("@phantom/parsers");
-    const { fetchNonce } = jest.requireMock("../utils/evm.js");
+    const { fetchNonce } = jest.requireMock("../utils/evm");
     const ctx = makeContext();
     await transferTokensTool.handler(
       {
@@ -241,7 +256,7 @@ describe("transfer_tokens — EVM native", () => {
       ctx as any,
     );
     expect(fetchNonce).toHaveBeenCalledWith(
-      expect.stringContaining("ethereum"),
+      expect.stringContaining("/chain/ethereum/"),
       "0xabcdef1234567890abcdef1234567890abcdef12",
     );
     const baseTx = parseToKmsTransaction.mock.calls[0][0];
@@ -342,6 +357,57 @@ describe("transfer_tokens — EVM ERC-20", () => {
     )) as any;
     expect(result.tokenMint).toBe(ERC20_CONTRACT);
     expect(result.to).toBe(RECIPIENT);
+  });
+});
+
+describe("transfer_tokens — default RPC resolution", () => {
+  const RECIPIENT_EVM = "0x742d35Cc6634C0532925a3b8D4C8db86fB5C4A7E" as const;
+
+  it("uses the configured default EVM RPC for nonce and fee fetches", async () => {
+    const { estimateGas, fetchGasPrice, fetchNonce } = jest.requireMock("../utils/evm");
+    const { resolveEvmRpcUrl } = jest.requireMock("../utils/rpc");
+    const ctx = makeContext();
+
+    await transferTokensTool.handler(
+      {
+        networkId: "eip155:1",
+        to: RECIPIENT_EVM,
+        amount: "1000000000000000000",
+        amountUnit: "base",
+        confirmed: "true",
+      },
+      ctx as any,
+    );
+
+    expect(resolveEvmRpcUrl).toHaveBeenCalledWith("eip155:1");
+    const resolvedUrl = (resolveEvmRpcUrl as jest.Mock).mock.results[0].value;
+    expect(estimateGas).toHaveBeenCalledWith(resolvedUrl, {
+      from: "0xabcdef1234567890abcdef1234567890abcdef12",
+      to: "0x742D35cC6634C0532925a3b8d4C8Db86fB5C4A7e",
+      value: "0xde0b6b3a7640000",
+    });
+    expect(fetchGasPrice).toHaveBeenCalledTimes(1);
+    expect(fetchGasPrice).toHaveBeenCalledWith(resolvedUrl);
+    expect(fetchNonce).toHaveBeenCalledWith(resolvedUrl, "0xabcdef1234567890abcdef1234567890abcdef12");
+  });
+
+  it("uses the configured default Solana RPC for Solana transfers", async () => {
+    const { Connection } = jest.requireMock("@solana/web3.js");
+    const { resolveSolanaRpcUrl } = jest.requireMock("../utils/rpc");
+    const ctx = makeContext();
+
+    await transferTokensTool.handler(
+      {
+        networkId: "solana:mainnet",
+        to: "RecipientAddress111111111111111111111111111",
+        amount: "1",
+        confirmed: "true",
+      },
+      ctx as any,
+    );
+
+    expect(resolveSolanaRpcUrl).toHaveBeenCalledWith("solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp");
+    expect(Connection).toHaveBeenCalledWith("https://default-solana-rpc.example.com", "confirmed");
   });
 });
 

@@ -2,7 +2,7 @@ import { cancelPerpOrderTool } from "./cancel-perp-order";
 
 const mockPerpsClient = { cancelOrder: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -20,7 +20,7 @@ const makeContext = () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.cancelOrder.mockResolvedValue({ status: "ok", data: {} });
 });

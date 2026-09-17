@@ -5,33 +5,21 @@
  * funding rates, and market metadata.
  */
 
+import { PerpMarketSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient, createAnonymousPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema } from "../utils/schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient, createAnonymousPerpsClient } from "../utils/perps";
+import { WalletIdSchema } from "../utils/schemas";
 
 const GetPerpMarketsSchema = z.object({
   walletId: WalletIdSchema.describe("Optional wallet ID (defaults to authenticated wallet)"),
 });
 
-const PerpMarketSchema = z.object({
-  symbol: z.string(),
-  assetId: z.number(),
-  maxLeverage: z.number(),
-  szDecimals: z.number(),
-  price: z.string(),
-  fundingRate: z.string(),
-  openInterest: z.string(),
-  volume24h: z.string(),
-});
-
-const GetPerpMarketsOutputSchema = z.array(PerpMarketSchema);
-
 const getPerpMarketsAction = createAction({
   description:
     "Returns all available perpetual markets on Hyperliquid with current prices, funding rates, open interest, 24h volume, max leverage, and asset IDs. Use this to discover tradeable markets and get current prices before opening positions.",
   options: GetPerpMarketsSchema,
-  output: GetPerpMarketsOutputSchema,
+  output: z.array(PerpMarketSchema),
   mcp: {
     command: "get_perp_markets",
     annotations: {

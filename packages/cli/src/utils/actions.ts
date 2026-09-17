@@ -1,8 +1,8 @@
 import { z } from "incur";
-import { varsSchema } from "../vars.js";
-import { PaymentRequiredSchema, RateLimitedSchema, wrapWithPaymentHandling } from "./payment.js";
-import type { PaymentRequiredResult, RateLimitedResult } from "./payment.js";
-import type { ToolAnnotations, ToolHandler, ToolInputSchema } from "../tools/types.js";
+import { varsSchema } from "../vars";
+import { PaymentRequiredSchema, RateLimitedSchema, wrapWithPaymentHandling } from "./payment";
+import type { PaymentRequiredResult, RateLimitedResult } from "./payment";
+import type { ToolAnnotations, ToolHandler, ToolInputSchema } from "../tools/types";
 
 /**
  * Defines a Phantom CLI action that is automatically exposed as both an `incur` CLI command
@@ -116,15 +116,28 @@ export function createAction<
     options: z.output<options>;
     var: z.output<typeof varsSchema>;
   }): Promise<z.output<output> | PaymentRequiredResult | RateLimitedResult> => {
-    try {
-      return await wrapWithPaymentHandling(() => run(args));
-    } catch (err) {
-      if (!isAuthError(err)) {
-        throw err;
+    const execute = async (
+      refreshAttempted = false,
+    ): Promise<z.output<output> | PaymentRequiredResult | RateLimitedResult> => {
+      try {
+        return await wrapWithPaymentHandling(() => run(args));
+      } catch (err) {
+        if (!isAuthError(err)) {
+          throw err;
+        }
+        if (
+          !refreshAttempted &&
+          getResponseStatus(err) === 401 &&
+          (await args.var.manager.tryRefreshSession?.().catch(() => false))
+        ) {
+          return execute(true);
+        }
+        await args.var.manager.resetSession();
+        throw new Error("AUTH_EXPIRED: Session expired or revoked. Call phantom_login to re-authenticate, then retry.");
       }
-      await args.var.manager.resetSession();
-      throw new Error("AUTH_EXPIRED: Session expired or revoked. Call phantom_login to re-authenticate, then retry.");
-    }
+    };
+
+    return execute();
   };
 
   const command = {
@@ -150,12 +163,26 @@ export function createAction<
   };
 }
 
-function isAuthError(error: unknown): boolean {
+type ErrorResponse = {
+  status?: number;
+  data?: { type?: string; error?: { code?: number } };
+};
+
+function getErrorResponse(error: unknown): ErrorResponse | undefined {
   if (!error || typeof error !== "object") {
-    return false;
+    return undefined;
   }
-  const status = (error as { response?: { status?: number } }).response?.status;
-  return status === 401 || status === 403;
+  return (error as { response?: ErrorResponse }).response;
+}
+
+function getResponseStatus(error: unknown): number | undefined {
+  return getErrorResponse(error)?.status;
+}
+
+function isAuthError(error: unknown): boolean {
+  const response = getErrorResponse(error);
+  const isSubmissionFailure = response?.data?.type === "submission-failed" || response?.data?.error?.code === -32009;
+  return !isSubmissionFailure && (response?.status === 401 || response?.status === 403);
 }
 
 function zodToInputSchema(schema: z.ZodObject<z.ZodRawShape>): ToolInputSchema {

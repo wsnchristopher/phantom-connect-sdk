@@ -1,5 +1,5 @@
-# owner: wp
-# slack: #wallet-platform
+# owner: age
+# slack: #agentic-trading
 
 name: Release
 
@@ -16,7 +16,7 @@ jobs:
   release:
     name: Publish to npm
     runs-on: ubuntu-latest
-    # Only run on the public mirror — never on the internal repo
+    # Only run in the repository that publishes packages.
     if: github.repository == 'phantom/phantom-connect-sdk'
     environment: ci
     permissions:

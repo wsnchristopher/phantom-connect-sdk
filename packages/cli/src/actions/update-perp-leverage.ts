@@ -4,14 +4,20 @@
  * Updates leverage and margin type for a perpetual market on Hyperliquid.
  */
 
+import { ActionResponseSchema } from "@phantom/perps-client";
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas.js";
-import { ActionResponseSchema } from "../utils/output-schemas.js";
+import { createAction } from "../utils/actions";
+import { createPerpsClient } from "../utils/perps";
+import { WalletIdSchema, DerivationIndexSchema } from "../utils/schemas";
 
 const UpdatePerpLeverageSchema = z.object({
-  market: z.string().trim().min(1, { message: "market is required" }).describe('Market symbol (e.g. "BTC")'),
+  market: z
+    .string()
+    .trim()
+    .min(1, { message: "market is required" })
+    .describe(
+      'Market symbol (e.g. "BTC"). For HIP-3 builder-deployed markets use "DEX:SYMBOL" format (e.g. "WOOF:BTC").',
+    ),
   leverage: z.coerce.number().min(1).describe("Leverage multiplier (e.g. 1 for 1x, 10 for 10x)"),
   marginType: z
     .enum(["cross", "isolated"])

@@ -2,7 +2,7 @@ import { openPerpPositionTool } from "./open-perp-position";
 
 const mockPerpsClient = { openPosition: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -22,7 +22,7 @@ const SUCCESS = { status: "ok", data: { statuses: [{ filled: { totalSz: "0.001",
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.openPosition.mockResolvedValue(SUCCESS);
 });
@@ -52,7 +52,7 @@ describe("open_perp_position", () => {
 
   it("calls openPosition with correct params for a market long", async () => {
     await openPerpPositionTool.handler(VALID_PARAMS, makeContext() as any);
-    const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+    const { createPerpsClient } = jest.requireMock("../utils/perps");
     expect(createPerpsClient).toHaveBeenCalledWith(expect.anything(), "wallet-1", 0);
     expect(mockPerpsClient.openPosition).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -33,6 +33,7 @@ import {
   completeAuth2Exchange,
   _getOrMigrateWallet,
   _getOrCreateAppWallet,
+  _getOrCreateAgentWallet,
 } from "../auth2Flow";
 import { Auth2Token } from "../Auth2Token";
 import { DerivationInfoAddressFormatEnum } from "@phantom/openapi-wallet-service";
@@ -461,6 +462,8 @@ describe("completeAuth2Exchange()", () => {
     listPendingMigrations: jest.fn().mockResolvedValue({ pendingMigrations: [] }),
     completeWalletTransfer: jest.fn().mockResolvedValue(undefined),
     getOrCreateWalletWithTag: jest.fn().mockResolvedValue({ walletId: "wallet-1", tags: [] }),
+    getWalletWithTag: jest.fn(),
+    createWallet: jest.fn(),
   };
 
   /** Access token whose JWT `aud` includes a wallet URN so `Auth2Token.wallet` is set (migration runs only in that case). */
@@ -476,6 +479,8 @@ describe("completeAuth2Exchange()", () => {
     mockKms.listPendingMigrations.mockResolvedValue({ pendingMigrations: [] });
     mockKms.completeWalletTransfer.mockResolvedValue(undefined);
     mockKms.getOrCreateWalletWithTag.mockResolvedValue({ walletId: "wallet-1", tags: [] });
+    mockKms.getWalletWithTag.mockReset();
+    mockKms.createWallet.mockReset();
   });
 
   it("calls exchangeAuthCode with the correct parameters", async () => {
@@ -569,7 +574,7 @@ describe("completeAuth2Exchange()", () => {
     expect(mockKms.listPendingMigrations).toHaveBeenCalledWith("org-1");
   });
 
-  it("calls kms.getOrCreateWalletWithTag with [clientId, 'APP'] tag when token has no wallet claim", async () => {
+  it("keeps the app-wallet helper path when token has no wallet claim", async () => {
     await completeAuth2Exchange({
       stamper: makeStamper(),
       kms: mockKms as any,
@@ -580,6 +585,8 @@ describe("completeAuth2Exchange()", () => {
     });
 
     expect(mockKms.getOrCreateWalletWithTag).toHaveBeenCalledWith(expect.objectContaining({ tag: "test-client" }));
+    expect(mockKms.getWalletWithTag).not.toHaveBeenCalled();
+    expect(mockKms.createWallet).not.toHaveBeenCalled();
   });
 
   it("uses wallet ID from the token aud claim and skips kms wallet discovery", async () => {
@@ -1098,5 +1105,98 @@ describe("_getOrCreateAppWallet()", () => {
         clientId: "my-app",
       }),
     ).rejects.toThrow("create failed");
+  });
+});
+
+describe("_getOrCreateAgentWallet()", () => {
+  const kms = {
+    getWalletWithTag: jest.fn(),
+    createWallet: jest.fn(),
+  };
+
+  beforeEach(() => {
+    kms.getWalletWithTag.mockReset();
+    kms.createWallet.mockReset();
+  });
+
+  it("returns an existing client-tagged wallet unchanged even when the agent tag is absent", async () => {
+    const existingWallet = {
+      walletId: "wallet-existing",
+      walletName: "Existing Agent Wallet",
+      tags: ["client-uuid"],
+      type: "mnemonic",
+    };
+    kms.getWalletWithTag.mockResolvedValue(existingWallet);
+
+    const result = await _getOrCreateAgentWallet({
+      kms: kms as any,
+      organizationId: "org-abc",
+      clientId: "client-uuid",
+    });
+
+    expect(result).toBe(existingWallet);
+    expect(kms.getWalletWithTag).toHaveBeenCalledWith({
+      organizationId: "org-abc",
+      tag: "client-uuid",
+    });
+    expect(kms.createWallet).not.toHaveBeenCalled();
+  });
+
+  it("creates a new agent wallet tagged with the client UUID and agent marker when lookup misses", async () => {
+    kms.getWalletWithTag.mockResolvedValue(null);
+    kms.createWallet.mockResolvedValue({ walletId: "wallet-new", tags: ["client-uuid", "agent"] });
+
+    await _getOrCreateAgentWallet({
+      kms: kms as any,
+      organizationId: "org-abc",
+      clientId: "client-uuid",
+    });
+
+    expect(kms.createWallet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        organizationId: "org-abc",
+        walletName: "Agent Wallet",
+        tags: ["client-uuid", "agent"],
+      }),
+    );
+  });
+
+  it("returns a concurrently-created wallet when create fails after lookup misses", async () => {
+    const concurrentlyCreatedWallet = {
+      walletId: "wallet-existing",
+      walletName: "Existing Agent Wallet",
+      tags: ["client-uuid", "agent"],
+    };
+    kms.getWalletWithTag.mockResolvedValueOnce(null).mockResolvedValueOnce(concurrentlyCreatedWallet);
+    kms.createWallet.mockRejectedValue(new Error("wallet already exists"));
+
+    const result = await _getOrCreateAgentWallet({
+      kms: kms as any,
+      organizationId: "org-abc",
+      clientId: "client-uuid",
+    });
+
+    expect(result).toBe(concurrentlyCreatedWallet);
+    expect(kms.getWalletWithTag).toHaveBeenCalledTimes(2);
+    expect(kms.getWalletWithTag).toHaveBeenNthCalledWith(2, {
+      organizationId: "org-abc",
+      tag: "client-uuid",
+    });
+  });
+
+  it("rethrows create wallet errors when the re-lookup still misses", async () => {
+    const createWalletError = new Error("quota exceeded");
+    kms.getWalletWithTag.mockResolvedValueOnce(null).mockResolvedValueOnce(null);
+    kms.createWallet.mockRejectedValue(createWalletError);
+
+    await expect(
+      _getOrCreateAgentWallet({
+        kms: kms as any,
+        organizationId: "org-abc",
+        clientId: "client-uuid",
+      }),
+    ).rejects.toBe(createWalletError);
+
+    expect(kms.getWalletWithTag).toHaveBeenCalledTimes(2);
   });
 });

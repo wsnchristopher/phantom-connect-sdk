@@ -4,21 +4,21 @@
  * Bridges USDC from the Hyperliquid perpetuals account to an external chain via the Relay bridge.
  */
 
-import { Cli, z } from "incur";
+import { WithdrawFromSpotResultSchema } from "@phantom/perps-client";
 import { isSolanaChain } from "@phantom/utils";
-import { createAction } from "../utils/actions.js";
+import { Cli, z } from "incur";
+import { createAction } from "../utils/actions";
 import {
   WalletIdSchema,
   DerivationIndexSchema,
   PositiveNumericStringSchema,
   Caip2ChainIdSchema,
   Caip19Schema,
-} from "../utils/schemas.js";
-import { createPerpsClient } from "../utils/perps.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { getEthereumAddress } from "../utils/evm.js";
-import { normalizeSwapperChainId } from "../utils/network.js";
-import { WithdrawFromSpotResultSchema } from "../utils/output-schemas.js";
+} from "../utils/schemas";
+import { createPerpsClient } from "../utils/perps";
+import { getSolanaAddress } from "../utils/solana";
+import { getEthereumAddress } from "../utils/evm";
+import { normalizeSwapperChainId } from "../utils/network";
 
 const WithdrawFromPerpsSchema = z.object({
   amountUsdc: PositiveNumericStringSchema.describe('Amount of USDC to withdraw (e.g. "50" for 50 USDC)'),

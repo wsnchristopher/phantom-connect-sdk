@@ -1,3 +1,20 @@
+import type { PhantomClient } from "@phantom/client";
+import { z } from "incur";
+import type { DeviceCodeAuthDisplayOptions } from "../auth/types";
+
+/**
+ * Minimal session interface required by tool handlers
+ */
+export type ISessionManager<T extends BaseSessionData> = {
+  isInitialized: () => boolean;
+  initialize: () => Promise<void>;
+  logout: () => Promise<void>;
+  getClient(): PhantomClient;
+  getSession: () => T;
+  tryRefreshSession?: () => Promise<boolean>;
+  resetSession: (displayOptions?: DeviceCodeAuthDisplayOptions) => Promise<void>;
+};
+
 /**
  * SSO callback parameters received from the connect.phantom.app
  */
@@ -26,24 +43,31 @@ export interface DCRClientConfig {
   client_id_issued_at: number;
 }
 
+export const BaseSessionDataSchema = z.object({
+  walletId: z.string(),
+  organizationId: z.string(),
+  appId: z.string().optional().describe("App/client ID used during authentication (for quote API key headers)"),
+  createdAt: z.number(),
+  updatedAt: z.number(),
+});
+
+export type BaseSessionData = z.infer<typeof BaseSessionDataSchema>;
+
 /**
  * Complete session data stored on disk
  *
  * Note: SSO flow uses stamper keys for API authentication, not OAuth tokens
  */
-export interface SessionData {
-  walletId: string;
-  organizationId: string;
-  authUserId: string;
-  /** App/client ID used during authentication (for quote API key headers) */
-  appId?: string;
-  /** Auth flow used to create this session */
-  authFlow?: "sso" | "device-code";
-  /** SSO flow uses API key stamper keys; device-code uses separate auth2 stamper storage */
-  stamperKeys?: {
-    publicKey: string;
-    secretKey: string;
-  };
-  createdAt: number;
-  updatedAt: number;
-}
+export const SessionDataSchema = z.object({
+  ...BaseSessionDataSchema.shape,
+  authUserId: z.string(),
+  authFlow: z.enum(["sso", "device-code"]).optional().describe("Auth flow used to create this session"),
+  stamperKeys: z
+    .object({
+      publicKey: z.string(),
+      secretKey: z.string(),
+    })
+    .optional()
+    .describe("SSO flow uses API key stamper keys; device-code uses separate auth2 stamper storage"),
+});
+export type SessionData = z.infer<typeof SessionDataSchema>;

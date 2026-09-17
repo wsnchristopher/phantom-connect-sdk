@@ -22,14 +22,14 @@ import type {
   HlCancelAction,
   HlUpdateLeverageAction,
   Eip712TypedData,
-  PerpsLogger,
   WithdrawFromSpotParams,
   WithdrawFromSpotResult,
   RelayWithdrawalV2Quote,
-} from "./types.js";
-import { noopLogger } from "./types.js";
-import { PerpsApi } from "./api.js";
-import type { ApiClient } from "./api.js";
+} from "./schemas";
+import { noopLogger } from "./logger";
+import type { PerpsLogger } from "./logger";
+import { PerpsApi } from "./api";
+import type { ApiClient } from "./api";
 import {
   buildExchangeActionTypedData,
   buildUsdClassTransferTypedData,
@@ -38,15 +38,15 @@ import {
   formatPrice,
   formatSize,
   resolveLimitPrice,
-} from "./actions.js";
+} from "./actions";
 import {
   HYPERCORE_MAINNET_CHAIN_ID,
   MARKET_ORDER_SLIPPAGE,
   HYPERLIQUID_SIGN_TRANSACTION_DOMAIN,
   EIP712_DOMAIN_TYPE,
   USDC_ADDRESSES,
-} from "./constants.js";
-import { assertPositiveDecimalString } from "./validate.js";
+} from "./constants";
+import { assertPositiveDecimalString } from "./validate";
 import { parseSignMessageResponse } from "@phantom/parsers";
 
 export interface PerpsClientOptions {
@@ -120,12 +120,13 @@ export class PerpsClient {
     if (!market) {
       throw new Error(`Market not found: ${params.market}`);
     }
+    const assetId = this.requireAssetId(market);
 
     // Set leverage before placing the order (required by Hyperliquid).
     // Defaults to isolated margin — cross margin shares account balance across positions.
     const leverageAction: HlUpdateLeverageAction = {
       type: "updateLeverage",
-      asset: market.assetId,
+      asset: assetId,
       isCross: params.marginType === "cross",
       leverage: params.leverage,
     };
@@ -162,7 +163,7 @@ export class PerpsClient {
       type: "order",
       orders: [
         {
-          a: market.assetId,
+          a: assetId,
           b: isBuy,
           p: limitPx,
           s: sz,
@@ -192,7 +193,8 @@ export class PerpsClient {
       throw new Error(`Market not found: ${params.market}`);
     }
 
-    const position = positions.find(p => p.coin.trim().toUpperCase() === market.symbol.trim().toUpperCase());
+    const assetId = this.requireAssetId(market);
+    const position = positions.find(p => p.coin.trim() === market.symbol.trim());
     if (!position) {
       throw new Error(`No open position for market: ${params.market}`);
     }
@@ -217,7 +219,7 @@ export class PerpsClient {
 
     const action: HlOrderAction = {
       type: "order",
-      orders: [{ a: market.assetId, b: isBuy, p: limitPx, s: sz, r: true, t: { limit: { tif: "Ioc" } } }],
+      orders: [{ a: assetId, b: isBuy, p: limitPx, s: sz, r: true, t: { limit: { tif: "Ioc" } } }],
       grouping: "na",
     };
 
@@ -238,10 +240,11 @@ export class PerpsClient {
     if (!market) {
       throw new Error(`Market not found: ${params.market}`);
     }
+    const assetId = this.requireAssetId(market);
 
     const action: HlCancelAction = {
       type: "cancel",
-      cancels: [{ a: market.assetId, o: params.orderId }],
+      cancels: [{ a: assetId, o: params.orderId }],
     };
 
     const nonce = nextNonce();
@@ -260,10 +263,11 @@ export class PerpsClient {
     if (!market) {
       throw new Error(`Market not found: ${params.market}`);
     }
+    const assetId = this.requireAssetId(market);
 
     const action: HlUpdateLeverageAction = {
       type: "updateLeverage",
-      asset: market.assetId,
+      asset: assetId,
       isCross: params.marginType === "cross",
       leverage: params.leverage,
     };
@@ -401,14 +405,10 @@ export class PerpsClient {
 
   // ── Internal helpers ──────────────────────────────────────────────────────
 
-  /**
-   * Fetches a single market by symbol (e.g. "BTC") using its CAIP-19 token address.
-   * More efficient than fetching all markets when only one is needed.
-   */
   private async findMarket(symbol: string): Promise<PerpMarket> {
-    const caip19 = `${HYPERCORE_MAINNET_CHAIN_ID}/address:${symbol.toUpperCase()}`;
+    const caip19 = `${HYPERCORE_MAINNET_CHAIN_ID}/address:${symbol}`;
     const markets = await this.api.getMarkets([caip19]);
-    const market = markets.find(m => m.symbol.toUpperCase() === symbol.toUpperCase());
+    const market = markets.find(m => m.symbol === symbol);
     if (!market) throw new Error(`Market not found: ${symbol}`);
     return market;
   }
@@ -426,6 +426,14 @@ export class PerpsClient {
       );
     }
     return `${destinationChainId}/address:${usdcAddress}`;
+  }
+
+  /** Throws if assetId is missing — the backend DTO does not formally expose it. */
+  private requireAssetId(market: PerpMarket): number {
+    if (market.assetId === undefined) {
+      throw new Error(`assetId not returned by backend for market ${market.symbol} — cannot construct order`);
+    }
+    return market.assetId;
   }
 
   private async sign(typedData: Eip712TypedData): Promise<ReturnType<typeof splitSignature>> {

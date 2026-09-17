@@ -3,7 +3,7 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
+import { createAction } from "../utils/actions";
 import * as packageJson from "../../package.json";
 
 const ConnectionStatusSchema = z.discriminatedUnion("connected", [

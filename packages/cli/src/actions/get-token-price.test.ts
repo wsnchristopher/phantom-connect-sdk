@@ -6,7 +6,7 @@ const USDC_ADDRESS = "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48";
 
 const mockFetchPortfolioBalance = jest.fn();
 
-jest.mock("../utils/portfolio.js", () => ({
+jest.mock("../utils/portfolio", () => ({
   ALL_NETWORKS: ["solana", "ethereum", "base", "polygon", "arbitrum", "bitcoin", "sui", "monad"],
   NETWORK_CONFIGS: {
     solana: { addressType: "solana", caip19Prefix: "solana:101" },
@@ -17,7 +17,7 @@ jest.mock("../utils/portfolio.js", () => ({
   fetchPortfolioBalance: (...args: unknown[]) => mockFetchPortfolioBalance(...args),
 }));
 
-jest.mock("../utils/tokens.js", () => ({
+jest.mock("../utils/tokens", () => ({
   NATIVE_TOKEN_CAIP19: {
     solana: "solana:101/nativeToken:501",
     ethereum: "eip155:1/nativeToken:60",

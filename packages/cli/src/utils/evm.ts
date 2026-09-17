@@ -4,7 +4,7 @@
  */
 
 import { AddressType } from "@phantom/client";
-import type { ToolContext } from "../tools/types.js";
+import type { ToolContext } from "../tools/types";
 
 /**
  * Asserts that a string is a valid EVM address (0x-prefixed, exactly 40 hex chars).

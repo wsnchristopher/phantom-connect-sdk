@@ -61,12 +61,21 @@ export interface Keypair {
   secretKey: string;
 }
 
-export interface SignMessageParams {
+interface WalletSigningParams {
   walletId: string;
-  message: string; // base64url encoded message
   networkId: NetworkId;
   derivationIndex?: number; // Optional account derivation index (defaults to 0)
 }
+
+export interface SignUtf8MessageParams extends WalletSigningParams {
+  message: string;
+}
+
+export interface SignEthereumMessageParams extends WalletSigningParams {
+  message: string; // base64url encoded message bytes
+}
+
+export type SignMessageParams = SignUtf8MessageParams;
 
 export interface SignTypedDataParams {
   walletId: string;

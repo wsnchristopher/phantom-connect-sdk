@@ -4,7 +4,8 @@
  */
 
 import { SessionManager } from "@phantom/cli";
-import type { PhantomClient, SessionData, DeviceCodeAuthDisplayOptions } from "@phantom/cli";
+import type { PhantomClient } from "@phantom/client";
+import type { SessionData, DeviceCodeAuthDisplayOptions } from "@phantom/cli";
 
 /**
  * Configuration options for PluginSession

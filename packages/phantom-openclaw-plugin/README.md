@@ -267,7 +267,6 @@ Check the ERC-20 allowance granted by an owner address to a spender address on a
 - `ownerAddress` (string, optional): Token owner address. Defaults to the authenticated wallet address
 - `walletId` (string, optional): Wallet ID, only used when `ownerAddress` is omitted
 - `derivationIndex` (number, optional): Derivation index (default: 0)
-- `rpcUrl` (string, optional): Custom EVM RPC URL override
 
 ### `simulate_transaction`
 
@@ -396,13 +395,13 @@ The plugin exposes 13 tools for perpetuals trading on Hyperliquid via Phantom's 
 
 ##### `get_perp_account`
 
-Returns perp account balance: `accountValue`, `availableBalance`, `availableToTrade`.
+Returns perp account balance: `accountValue`, `availableBalance`, `availableToTrade`. For accounts with HIP-3 builder-deployed positions, also returns `dexs` — a map of DEX name → `{ accountValue, availableBalance, availableToTrade }`.
 
 **Parameters:** `walletId` (optional), `derivationIndex` (optional, default 0)
 
 ##### `get_perp_markets`
 
-Returns all available perpetual markets with current price, funding rate, open interest, 24h volume, and max leverage.
+Returns all available perpetual markets with current price, funding rate, open interest, 24h volume, and max leverage. HIP-3 builder-deployed markets encode the DEX in the `symbol` field using `DEX:SYMBOL` format (e.g. `"xyz:NVDA"`).
 
 **Parameters:** `walletId` (optional)
 
@@ -443,7 +442,7 @@ Opens a perpetual position. Market orders use 10% slippage (IOC). Limit orders r
 
 **Parameters:**
 
-- `market` (string, required): Market symbol (e.g. `"BTC"`, `"ETH"`, `"SOL"`)
+- `market` (string, required): Market symbol (e.g. `"BTC"`, `"ETH"`, `"SOL"`). For HIP-3 builder-deployed markets use `"DEX:SYMBOL"` format (e.g. `"WOOF:BTC"`).
 - `direction` (string, required): `"long"` or `"short"`
 - `sizeUsd` (string, required): Notional position size in USD (e.g. `"500"`)
 - `leverage` (number, required): Leverage multiplier (e.g. `10` for 10x)
@@ -458,7 +457,7 @@ Closes an open position using a market IOC order. Defaults to 100% close.
 
 **Parameters:**
 
-- `market` (string, required): Market symbol (e.g. `"BTC"`)
+- `market` (string, required): Market symbol (e.g. `"BTC"`). For HIP-3 builder-deployed markets use `"DEX:SYMBOL"` format (e.g. `"WOOF:BTC"`).
 - `sizePercent` (number, optional): Percentage to close (1–100, default 100)
 - `walletId` (string, optional), `derivationIndex` (number, optional, default 0)
 
@@ -468,7 +467,7 @@ Cancels an open order by ID. Use `get_perp_orders` to retrieve order IDs.
 
 **Parameters:**
 
-- `market` (string, required): Market symbol
+- `market` (string, required): Market symbol. For HIP-3 builder-deployed markets use `"DEX:SYMBOL"` format (e.g. `"WOOF:BTC"`).
 - `orderId` (number, required): Order ID from `get_perp_orders`
 - `walletId` (string, optional), `derivationIndex` (number, optional, default 0)
 
@@ -478,7 +477,7 @@ Updates leverage and margin type for a market. Takes effect on new orders.
 
 **Parameters:**
 
-- `market` (string, required): Market symbol
+- `market` (string, required): Market symbol. For HIP-3 builder-deployed markets use `"DEX:SYMBOL"` format (e.g. `"WOOF:BTC"`).
 - `leverage` (number, required): New leverage multiplier
 - `marginType` (string, required): `"isolated"` or `"cross"`
 - `walletId` (string, optional), `derivationIndex` (number, optional, default 0)

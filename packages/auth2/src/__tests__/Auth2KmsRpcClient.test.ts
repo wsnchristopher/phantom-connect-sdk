@@ -10,6 +10,8 @@ jest.mock("@phantom/openapi-wallet-service", () => ({
   GetOrCreatePhantomOrganizationMethodEnum: {
     getOrCreatePhantomOrganization: "getOrCreatePhantomOrganization",
   },
+  CreateWalletMethodEnum: { createWallet: "createWallet" },
+  GetWalletWithTagMethodEnum: { getWalletWithTag: "getWalletWithTag" },
   GetOrCreateWalletWithTagMethodEnum: { getOrCreateWalletWithTag: "getOrCreateWalletWithTag" },
   DerivationInfoCurveEnum: { ed25519: "ed25519", secp256k1: "secp256k1" },
   DerivationInfoAddressFormatEnum: {
@@ -331,6 +333,135 @@ describe("Auth2KmsRpcClient", () => {
       const client = makeClient();
 
       await expect(client.getOrCreateWalletWithTag(walletArgs)).rejects.toThrow("KMS RPC error");
+    });
+  });
+
+  describe("getWalletWithTag", () => {
+    it("posts getWalletWithTag RPC with organizationId and tag", async () => {
+      mockPostKmsRpc.mockResolvedValueOnce({
+        data: { result: { walletId: "wallet-existing", tags: ["client-uuid"] } },
+      });
+      const client = makeClient();
+
+      await client.getWalletWithTag({ organizationId: "org-abc", tag: "client-uuid" });
+
+      const request = mockPostKmsRpc.mock.calls[0][0] as { method: string; params: Record<string, unknown> };
+      expect(request.method).toBe("getWalletWithTag");
+      expect(request.params).toEqual({ organizationId: "org-abc", tag: "client-uuid" });
+    });
+
+    it("returns null when the KMS result is null", async () => {
+      mockPostKmsRpc.mockResolvedValueOnce({ data: { result: null } });
+      const client = makeClient();
+
+      await expect(client.getWalletWithTag({ organizationId: "org-abc", tag: "missing-client" })).resolves.toBeNull();
+    });
+  });
+
+  describe("createWallet", () => {
+    it("uses CreateWalletMethodEnum.createWallet as the method", async () => {
+      mockPostKmsRpc.mockResolvedValueOnce({ data: { result: { walletId: "wallet-new", tags: ["agent"] } } });
+      const client = makeClient();
+      const walletArgs = {
+        organizationId: "org-abc",
+        walletName: "Agent Wallet",
+        tags: ["client-uuid", "agent"],
+        accounts: [] as never[],
+        mnemonicLength: 24,
+      } satisfies Parameters<Auth2KmsRpcClient["createWallet"]>[0];
+
+      await client.createWallet(walletArgs);
+
+      const request = mockPostKmsRpc.mock.calls[0][0] as { method: string };
+      expect(request.method).toBe("createWallet");
+    });
+
+    it("passes walletName, organizationId, tags, accounts, and mnemonicLength in strict RPC params", async () => {
+      mockPostKmsRpc.mockResolvedValueOnce({ data: { result: { walletId: "wallet-new", tags: ["agent"] } } });
+      const client = makeClient();
+      const accounts = [{ curve: "Ed25519", derivationPath: "m/44'/501'/0'/0'", addressFormat: "solana" }];
+      const walletArgs = {
+        organizationId: "org-abc",
+        walletName: "Agent Wallet",
+        tags: ["client-uuid", "agent"],
+        accounts: accounts as never[],
+        mnemonicLength: 24,
+      } satisfies Parameters<Auth2KmsRpcClient["createWallet"]>[0];
+
+      await client.createWallet(walletArgs);
+
+      const request = mockPostKmsRpc.mock.calls[0][0] as { params: Record<string, unknown> };
+      expect(request.params).toEqual({
+        organizationId: "org-abc",
+        walletName: "Agent Wallet",
+        tags: ["client-uuid", "agent"],
+        accounts,
+        mnemonicLength: 24,
+      });
+    });
+  });
+
+  describe("HTTP provisioning errors", () => {
+    const walletArgs = {
+      organizationId: "org-abc",
+      walletName: "Agent Wallet",
+      tags: ["client-uuid", "agent"],
+      accounts: [] as never[],
+      mnemonicLength: 24,
+    } satisfies Parameters<Auth2KmsRpcClient["createWallet"]>[0];
+
+    function makeHttpError(status: number, data: unknown, extras: Record<string, unknown> = {}) {
+      return Object.assign(new Error(`Request failed with status code ${status}`), {
+        response: { status, data },
+        ...extras,
+      });
+    }
+
+    it("includes status, ErrorResponse.error, and requestId for a 403", async () => {
+      mockPostKmsRpc.mockRejectedValueOnce(
+        makeHttpError(
+          403,
+          {
+            error: "Policy violation: transaction not allowed",
+            requestId: "550e8400-e29b-41d4-a716-446655440000",
+          },
+          {
+            config: {
+              headers: { authorization: "Bearer secret-token", "x-phantom-stamp": "stamp-secret" },
+            },
+          },
+        ),
+      );
+      const client = makeClient();
+
+      const thrown = await client.createWallet(walletArgs).catch((error: unknown) => error);
+
+      expect(thrown).toBeInstanceOf(Error);
+      expect((thrown as Error).message).toBe(
+        "KMS HTTP 403: Policy violation: transaction not allowed (requestId=550e8400-e29b-41d4-a716-446655440000)",
+      );
+      expect((thrown as Error).message).not.toContain("secret-token");
+      expect((thrown as Error).message).not.toContain("stamp-secret");
+      expect(thrown).not.toHaveProperty("config");
+    });
+
+    it("includes status and ErrorResponse.error for a 500 without requestId", async () => {
+      mockPostKmsRpc.mockRejectedValueOnce(makeHttpError(500, { error: "Internal server error" }));
+      const client = makeClient();
+
+      const thrown = await client.createWallet(walletArgs).catch((error: unknown) => error);
+
+      expect(thrown).toBeInstanceOf(Error);
+      expect((thrown as Error).message).toBe("KMS HTTP 500: Internal server error");
+      expect((thrown as Error).message).not.toMatch(/requestId=/);
+    });
+
+    it("preserves a non-HTTP error without rewriting it", async () => {
+      const original = new Error("socket hang up");
+      mockPostKmsRpc.mockRejectedValueOnce(original);
+      const client = makeClient();
+
+      await expect(client.createWallet(walletArgs)).rejects.toBe(original);
     });
   });
 });

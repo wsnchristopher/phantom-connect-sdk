@@ -1,5 +1,19 @@
 # @phantom/server-sdk
 
+## 2.0.3
+
+### Patch Changes
+
+- Updated dependencies [65140f4]
+- Updated dependencies [fce0979]
+  - @phantom/client@2.0.3
+  - @phantom/constants@2.0.3
+  - @phantom/base64url@2.0.3
+  - @phantom/sdk-types@2.0.3
+  - @phantom/parsers@2.0.3
+  - @phantom/api-key-stamper@2.0.3
+  - @phantom/utils@2.0.3
+
 ## 2.0.2
 
 ### Patch Changes

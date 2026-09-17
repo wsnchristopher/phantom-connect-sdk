@@ -10,13 +10,13 @@ import { PhantomClient } from "@phantom/client";
 import { ApiKeyStamper } from "@phantom/api-key-stamper";
 import { Auth2Stamper } from "@phantom/auth2";
 import { ANALYTICS_HEADERS, type ServerSdkHeaders } from "@phantom/constants";
-import { SessionStorage } from "./storage.js";
-import { OAuthFlow } from "../auth/oauth.js";
-import { DeviceCodeAuthProvider } from "../auth/DeviceCodeAuthProvider.js";
-import { NodeFileAuth2StamperStorage } from "../auth/NodeFileAuth2StamperStorage.js";
-import type { DeviceCodeAuthDisplayOptions } from "../auth/DeviceCodeAuthProvider.js";
-import type { SessionData } from "./types.js";
-import { Logger } from "../utils/logger.js";
+import { SessionStorage } from "./storage";
+import { OAuthFlow } from "../auth/oauth";
+import { DeviceCodeAuthProvider } from "../auth/DeviceCodeAuthProvider";
+import { NodeFileAuth2StamperStorage } from "../auth/NodeFileAuth2StamperStorage";
+import type { DeviceCodeAuthDisplayOptions } from "../auth/types";
+import type { ISessionManager, SessionData } from "./types";
+import { Logger } from "../utils/logger";
 import * as packageJson from "../../package.json";
 
 /**
@@ -56,7 +56,7 @@ export interface SessionManagerOptions {
  * const session = manager.getSession();
  * ```
  */
-export class SessionManager {
+export class SessionManager implements ISessionManager<SessionData> {
   private readonly authBaseUrl: string;
   private readonly connectBaseUrl: string;
   private readonly walletsApiBaseUrl: string;
@@ -209,9 +209,9 @@ export class SessionManager {
    *
    * On startup, initialize() proactively validates a loaded session via a
    * lightweight API call and re-authenticates immediately if it returns 401/403.
-   * During normal operation, any tool call that receives 401/403 automatically
-   * calls resetSession(), opens the browser for re-auth, and returns AUTH_EXPIRED
-   * so the agent can retry.
+   * During normal operation, a 401 first attempts a token refresh. Unrecoverable
+   * authentication failures reset the session and return AUTH_EXPIRED so the agent
+   * can retry, while transaction submission rejections preserve the active session.
    *
    * @returns true if a session is loaded in memory
    */

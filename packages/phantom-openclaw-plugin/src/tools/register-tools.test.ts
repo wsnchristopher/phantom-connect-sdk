@@ -1,8 +1,8 @@
 import type { TSchema } from "@sinclair/typebox";
 import { Value } from "@sinclair/typebox/value";
-import type { OpenClawApi } from "../client/types.js";
-import type { PluginSession } from "../session.js";
-import { registerPhantomTools } from "./register-tools.js";
+import type { OpenClawApi } from "../client/types";
+import type { PluginSession } from "../session";
+import { registerPhantomTools } from "./register-tools";
 import { version } from "../../package.json";
 
 type RegisteredTool = Parameters<OpenClawApi["registerTool"]>[0];

@@ -8,13 +8,13 @@
  */
 
 import { Cli, z } from "incur";
-import { createAction } from "../utils/actions.js";
-import { WalletIdSchema, PercentageSchema, Caip19Schema } from "../utils/schemas.js";
-import { resolveNetworks, fetchPortfolioBalances, type PortfolioItem } from "../utils/portfolio.js";
-import { normalizeSwapperChainId } from "../utils/network.js";
-import { getSolanaAddress } from "../utils/solana.js";
-import { buildTokenObject, fetchSwapQuote, executeSwap } from "../utils/swap.js";
-import { NATIVE_TOKEN_CAIP19 } from "../utils/tokens.js";
+import { createAction } from "../utils/actions";
+import { WalletIdSchema, PercentageSchema, Caip19Schema } from "../utils/schemas";
+import { resolveNetworks, fetchPortfolioBalances, type PortfolioItem } from "../utils/portfolio";
+import { normalizeSwapperChainId } from "../utils/network";
+import { getSolanaAddress } from "../utils/solana";
+import { buildTokenObject, fetchSwapQuote, executeSwap } from "../utils/swap";
+import { NATIVE_TOKEN_CAIP19 } from "../utils/tokens";
 
 /** Minimum SOL to reserve for transaction fees (in UI units). */
 const SOL_FEE_RESERVE = 0.05;

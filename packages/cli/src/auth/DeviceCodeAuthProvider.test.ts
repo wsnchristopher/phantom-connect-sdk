@@ -6,6 +6,7 @@ const mockListPendingMigrations = jest.fn();
 const mockGetOrganizationWallets = jest.fn();
 const mockGetOrCreateWalletWithTag = jest.fn();
 const mockGetOrCreateAppWallet = jest.fn();
+const mockGetOrCreateAgentWallet = jest.fn();
 const mockFromAccessToken = jest.fn();
 const mockDeriveNonce = jest.fn();
 const mockDecodeJwtClaims = jest.fn();
@@ -39,6 +40,7 @@ jest.mock("@phantom/auth2", () => ({
   decodeJwtClaims: (...args: unknown[]) => mockDecodeJwtClaims(...args),
   _deriveNonce: (...args: unknown[]) => mockDeriveNonce(...args),
   _getOrCreateAppWallet: (...args: unknown[]) => mockGetOrCreateAppWallet(...args),
+  _getOrCreateAgentWallet: (...args: unknown[]) => mockGetOrCreateAgentWallet(...args),
 }));
 
 describe("DeviceCodeAuthProvider", () => {
@@ -83,7 +85,7 @@ describe("DeviceCodeAuthProvider", () => {
     jest.restoreAllMocks();
   });
 
-  it("completes device-code auth and resolves the app wallet through the shared helper", async () => {
+  it("completes device-code auth and resolves the agent wallet through the shared helper", async () => {
     mockAxiosPost
       .mockResolvedValueOnce({
         data: {
@@ -110,6 +112,7 @@ describe("DeviceCodeAuthProvider", () => {
       wallet: { id: "wallet-from-token", derivationIndex: 0 },
     });
     mockGetOrCreateAppWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: [] });
+    mockGetOrCreateAgentWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: ["env-client-id", "agent"] });
 
     const provider = new DeviceCodeAuthProvider(stamper as never, {
       authBaseUrl: "https://auth.phantom.app",
@@ -128,18 +131,21 @@ describe("DeviceCodeAuthProvider", () => {
 
     expect(mockDeriveNonce).toHaveBeenCalledWith(stamper.getCryptoKeyPair(), "");
     expect(mockAxiosPost).toHaveBeenCalledTimes(2);
+    const tokenRequestBody = new URLSearchParams(mockAxiosPost.mock.calls[1][1] as string);
+    expect(tokenRequestBody.get("resource")).toBe("urn:phantom:wallet-tag:env-client-id");
     expect(stamper.setTokens).toHaveBeenCalledWith({
       accessToken: "access-token",
       idType: "Bearer",
       refreshToken: "refresh-token",
       expiresInMs: 3600 * 1000,
     });
-    expect(mockGetOrCreateAppWallet).toHaveBeenCalledWith(
+    expect(mockGetOrCreateAgentWallet).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: "org-123",
         clientId: "env-client-id",
       }),
     );
+    expect(mockGetOrCreateAppWallet).not.toHaveBeenCalled();
   });
 
   it("fails when the token is missing organization_id", async () => {
@@ -179,9 +185,10 @@ describe("DeviceCodeAuthProvider", () => {
     await expect(provider.authenticate()).rejects.toThrow("Device auth token is missing organization_id");
     expect(mockGetOrganizationWallets).not.toHaveBeenCalled();
     expect(mockGetOrCreateAppWallet).not.toHaveBeenCalled();
+    expect(mockGetOrCreateAgentWallet).not.toHaveBeenCalled();
   });
 
-  it("reuses the shared app-wallet helper for device auth", async () => {
+  it("reuses the shared agent-wallet helper for device auth", async () => {
     mockAxiosPost
       .mockResolvedValueOnce({
         data: {
@@ -208,6 +215,7 @@ describe("DeviceCodeAuthProvider", () => {
       wallet: undefined,
     });
     mockGetOrCreateAppWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: [] });
+    mockGetOrCreateAgentWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: ["env-client-id", "agent"] });
 
     const provider = new DeviceCodeAuthProvider(stamper as never, {
       authBaseUrl: "https://auth.phantom.app",
@@ -224,12 +232,13 @@ describe("DeviceCodeAuthProvider", () => {
       appId: "env-client-id",
     });
 
-    expect(mockGetOrCreateAppWallet).toHaveBeenCalledWith(
+    expect(mockGetOrCreateAgentWallet).toHaveBeenCalledWith(
       expect.objectContaining({
         organizationId: "org-123",
         clientId: "env-client-id",
       }),
     );
+    expect(mockGetOrCreateAppWallet).not.toHaveBeenCalled();
   });
 
   it("emits a text prompt instead of launching the browser when openBrowser is false", async () => {
@@ -259,6 +268,7 @@ describe("DeviceCodeAuthProvider", () => {
       wallet: { id: "wallet-from-token", derivationIndex: 0 },
     });
     mockGetOrCreateAppWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: [] });
+    mockGetOrCreateAgentWallet.mockResolvedValue({ walletId: "agent-wallet-id", tags: ["env-client-id", "agent"] });
 
     const onPrompt = jest.fn();
     const provider = new DeviceCodeAuthProvider(stamper as never, {

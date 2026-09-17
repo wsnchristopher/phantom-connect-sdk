@@ -6,8 +6,8 @@ import { Type } from "@sinclair/typebox";
 import type { TSchema } from "@sinclair/typebox";
 import { loginTool, logoutTool, SessionManager, tools, type PluginConfig, type ToolContext } from "@phantom/cli";
 import { PhantomApiClient } from "@phantom/phantom-api-client";
-import type { OpenClawApi } from "../client/types.js";
-import type { PluginSession } from "../session.js";
+import type { OpenClawApi } from "../client/types";
+import type { PluginSession } from "../session";
 import * as packageJson from "../../package.json";
 
 /**

@@ -2,7 +2,7 @@ import { closePerpPositionTool } from "./close-perp-position";
 
 const mockPerpsClient = { closePosition: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -20,7 +20,7 @@ const makeContext = () => {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.closePosition.mockResolvedValue({ status: "ok", data: {} });
 });
@@ -38,7 +38,7 @@ describe("close_perp_position", () => {
 
   it("calls closePosition with market and 100 sizePercent by default", async () => {
     await closePerpPositionTool.handler({ market: "BTC" }, makeContext() as any);
-    const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+    const { createPerpsClient } = jest.requireMock("../utils/perps");
     expect(createPerpsClient).toHaveBeenCalledWith(expect.anything(), "wallet-1", 0);
     expect(mockPerpsClient.closePosition).toHaveBeenCalledWith({ market: "BTC", sizePercent: 100 });
   });

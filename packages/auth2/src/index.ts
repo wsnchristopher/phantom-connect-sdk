@@ -1,4 +1,9 @@
-export { Auth2KmsRpcClient, type Auth2KmsClientOptions } from "./Auth2KmsRpcClient";
+export {
+  Auth2KmsRpcClient,
+  type Auth2KmsClientOptions,
+  type Auth2KmsCreateWalletArgs,
+  type Auth2KmsGetWalletWithTagArgs,
+} from "./Auth2KmsRpcClient";
 export { Auth2Stamper, type Auth2StamperRefreshConfig, type Auth2Logger } from "./Auth2Stamper";
 export type { Auth2StamperStorage, Auth2StamperStoredRecord } from "./Auth2StamperStorage";
 export { Auth2Token, Auth2TokenExpiredError, decodeJwtClaims } from "./Auth2Token";
@@ -10,6 +15,7 @@ export {
   createConnectStartUrl,
   _deriveNonce,
   _getOrCreateAppWallet,
+  _getOrCreateAgentWallet,
   _createCodeChallenge,
   validateAuth2Callback,
   completeAuth2Exchange,

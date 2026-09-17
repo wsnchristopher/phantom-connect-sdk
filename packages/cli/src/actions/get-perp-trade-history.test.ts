@@ -2,7 +2,7 @@ import { getPerpTradeHistoryTool } from "./get-perp-trade-history";
 
 const mockPerpsClient = { getTradeHistory: jest.fn() };
 
-jest.mock("../utils/perps.js", () => ({ createPerpsClient: jest.fn() }));
+jest.mock("../utils/perps", () => ({ createPerpsClient: jest.fn() }));
 
 const makeContext = () => {
   const client = {};
@@ -33,7 +33,7 @@ const HISTORY = [
 
 beforeEach(() => {
   jest.clearAllMocks();
-  const { createPerpsClient } = jest.requireMock("../utils/perps.js");
+  const { createPerpsClient } = jest.requireMock("../utils/perps");
   (createPerpsClient as jest.Mock).mockResolvedValue(mockPerpsClient);
   mockPerpsClient.getTradeHistory.mockResolvedValue(HISTORY);
 });

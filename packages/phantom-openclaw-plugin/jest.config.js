@@ -8,6 +8,5 @@ module.exports = {
     "^incur$": "<rootDir>/../cli/src/__mocks__/incur.ts",
     "^@phantom/cli$": "<rootDir>/../cli/src/index.ts",
     "^@phantom/constants$": "<rootDir>/../constants/src/index.ts",
-    "^(\\.{1,2}/.*)\\.js$": "$1",
   },
 };
